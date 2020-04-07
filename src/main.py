@@ -2,6 +2,7 @@ import os, sys
 import pdb
 import argparse
 import torch
+import losses
 from utils import *
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -13,7 +14,6 @@ def main(args):
     lr_gen = args.lr_gen
     num_epochs = args.num_epochs
 
-    
     ### TODO:
     # make directories
     # make network instances

@@ -10,7 +10,7 @@ class disc(nn.Module):
 
     def __init__(self, input_channels=3, lr=1e-3):
 
-        super.__init__()
+        super(disc, self).__init__()
 
         self.model = nn.Sequential(
                                     nn.Conv2d(in_channels=input_channels, out_channels=32, kernel_size=3, stride=1),
@@ -24,7 +24,7 @@ class disc(nn.Module):
         
         self.linear = nn.Linear(in_features=512, out_features=1, bias=True)
 
-        self.optimizer = torch.optim.Adam(self.parameters(), learning_rate=lr)
+        self.optimizer = torch.optim.Adam(self.parameters(), lr=lr)
 
     
     def forward(self, x):

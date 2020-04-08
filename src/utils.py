@@ -3,7 +3,7 @@ import pdb
 import os,sys
 import torch
 
-def parse_args():
+def parse_arguments():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--lrd', dest='lr_disc', type=float, default=1e-3, help='learning rate_for_discriminator')
@@ -105,16 +105,15 @@ def image_warp(im,flow,device):
 	# print(im_flat.size())
 	# print(idx_a.size())
 
-	Ia = torch.gather(im_flat, dim=0, index=idx_a.long()
-	Ib = torch.gather(im_flat, dim=0, index=idx_b.long()
-	Ic = torch.gather(im_flat, dim=0, index=idx_c.long()
-	Id = torch.gather(im_flat, dim=0, index=idx_d.long()
+	Ia = torch.gather(im_flat, dim=0, index=idx_a.long())
+	Ib = torch.gather(im_flat, dim=0, index=idx_b.long())
+	Ic = torch.gather(im_flat, dim=0, index=idx_c.long())
+	Id = torch.gather(im_flat, dim=0, index=idx_d.long())
 
 	warped_flat = (wa * Ia) + (wb * Ib) + (wc * Ic) + (wd * Id)
 	warped = torch.reshape(warped_flat,(num_batch,height,width,channels))
 	warped = warped.permute(0,3,1,2)
 	im = im.permute(0,3,1,2)
 	flow = flow.permute(0,3,1,2)
-
 
 	return warped

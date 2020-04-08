@@ -7,14 +7,14 @@ import sys
 
 
 class gen(nn.Module):
-    def __init__(self, input_channels=3, latent_dim=100, out_channels=2, lr=1e-3):
+    def __init__(self, input_channels=1, latent_dim=100, out_channels=2, lr=1e-3):
         
         '''
         input_channels: number of channels in the input image
         latent_dim: dimension of the latent noise space
         out_channels: number of channels in the optical flow (will be 2, 1 for each axis)
         '''
-        super.__init__()
+        super(gen, self).__init__()
 
         self.input_channels = input_channels
         self.latent_dim = latent_dim
@@ -37,17 +37,17 @@ class gen(nn.Module):
         self.latent_code = nn.Linear(in_features=512, out_features=2*latent_dim, bias=True)
 
         self.decoder = nn.Sequential(
-                                    nn.Conv2dTranspose(in_channels=512, out_channels=256, kernel_size=3, stride=1),
+                                    nn.ConvTranspose2d(in_channels=512, out_channels=256, kernel_size=3, stride=1),
                                     nn.ReLU(),
-                                    nn.Conv2dTranspose(in_channels=256, out_channels=64, kernel_size=3, stride=1),
+                                    nn.ConvTranspose2d(in_channels=256, out_channels=64, kernel_size=3, stride=1),
                                     nn.ReLU(),
-                                    nn.Conv2dTranspose(in_channels=64, out_channels=32, kernel_size=3, stride=1),
+                                    nn.ConvTranspose2d(in_channels=64, out_channels=32, kernel_size=3, stride=1),
                                     nn.ReLU(),
-                                    nn.Conv2dTranspose(in_channels=32, out_channels=out_channels, kernel_size=3, stride=1),
+                                    nn.ConvTranspose2d(in_channels=32, out_channels=out_channels, kernel_size=3, stride=1),
                                     nn.ReLU(),
                                     )
         
-        self.optimizer = torch.optim.Adam(self.parameters(), learning_rate=lr)
+        self.optimizer = torch.optim.Adam(self.parameters(), lr=lr)
 
     def sample_noise(self, mean, logvar):
         tau = torch.randn_like(logvar).to(logvar.device)

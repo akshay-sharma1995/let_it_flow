@@ -3,23 +3,13 @@ import pdb
 import argparse
 import torch
 import losses
-# # from utils import *
+from generator import *
+from discriminator import *
+import pdb
+from utils import *
 
-# DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-def parse_arguments():
-# Command-line flags are defined here.
-        parser = argparse.ArgumentParser()
-
-        parser.add_argument('--num_epochs', dest='num_epochs', type=int,
-                                                default=100, help="Number of epochs")
-
-        parser.add_argument("--lr_disc",dest="lr_disc",type=float,
-                                                default=5e-4,help="Discriminator Learning Rate")
-
-        parser.add_argument('--lr_gen', dest='lr_gen', type=float,
-                                                default=5e-4, help="Generator Learning Rate")
-        return parser.parse_args()
 
 def main():
     args = parse_arguments()
@@ -28,7 +18,26 @@ def main():
     lr_gen = args.lr_gen
     num_epochs = args.num_epochs
 
-    print('num_epochs')
+    data  = np.load('./data/0.npz')
+    frames = data['arr_0']
+    frame1 = frames[:,:,0]
+    frame2 = frames[:,:,1]
+
+    pdb.set_trace()
+    frames = np.swapaxes(frames,0,2)
+    frames = np.swapaxes(frames,1,2)
+    frames = np.expand_dims(frames,axis=0)
+
+
+    model_gen = gen()
+    model_disc = disc()
+
+    frames = torch.tensor(frames, device = DEVICE).float()
+    optical_flow = model_gen(frames).to(device)
+
+    frame2_fake = image_warp(frame1,optical_flow,device)
+
+    
 
 #     ### TODO:
 #     # make directories

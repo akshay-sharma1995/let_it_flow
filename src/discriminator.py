@@ -8,7 +8,7 @@ import sys
 
 class disc(nn.Module):
 
-    def __init__(self, input_channels=3, lr=1e-3):
+    def __init__(self, input_channels=1, lr=1e-3):
 
         super(disc, self).__init__()
 

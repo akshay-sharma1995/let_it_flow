@@ -23,6 +23,7 @@ def main():
     data_dir = args.data_dir
     save_interval = args.save_interval
     
+    ## create required directories
     results_dir = os.path.join(os.cwd(), "results")
     models_dir = os.path.join(os.cwd(), "saved_models")
     
@@ -32,11 +33,12 @@ def main():
     curr_dir = os.path.join(results_dir, timestamp)
     
     make_dirs([results_dir, models_dir, curr_dir])
-
+    
+    ## loading dataset, create dataloader
     train_dataset = image_pair_dataset(root_dir=data_dir, transform=transforms.Compose([ToTensor()]))
     train_dataloader = Dataloader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
 
-
+    ## create generator and discriminator instances
     model_gen = gen().to(DEVICE)
     model_disc = disc().to(DEVICE)
 
@@ -68,7 +70,7 @@ def main():
             
             with torch.no_grad():
                 optical_flow = model_gen(frames)
-                frame2_fake = image_warp(X_train[:,0:3],optical_flow,device)
+                # frame2_fake = image_warp(X_train[:,0:3],optical_flow,device)
 
             outDis_real = model_disc(X_train[:,3:])
             # label_real  = torch.ones([frame2_real.shape[0],1]).to(device)
@@ -124,14 +126,6 @@ def main():
     plt.show()
 
     
-
-#     ### TODO:
-#     # make directories
-#     # make network instances
-#     # load checkpoints if needed
-#     # initialize all props to be saved
-#     # train function
-#     # test function
 
 
 if __name__ == "__main__":

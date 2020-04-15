@@ -2,7 +2,7 @@ import argparse
 import pdb
 import os,sys
 import torch
-
+import torch.nn as nn
 def parse_arguments():
     parser = argparse.ArgumentParser()
 
@@ -119,3 +119,14 @@ def image_warp(im,flow,device):
 	flow = flow.permute(0,3,1,2)
 
 	return warped
+
+
+# def conv(c_in, c_out, K, S, P=None, d=None , activations=nn.ReLU(), batchnorm=True):
+    
+        # layers_list = 
+        # layer = nn.Sequential(
+
+
+
+
+

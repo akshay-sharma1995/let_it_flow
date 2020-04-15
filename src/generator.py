@@ -24,27 +24,74 @@ class gen(nn.Module):
         ## TODO: finalise the input image dim, and accordingly modify the network including the latent dimensions
 
         self.encoder = nn.Sequential(
-                                    nn.Conv2d(in_channels=2*input_channels, out_channels=32, kernel_size=3, stride=1),
+                                    nn.Conv2d(in_channels=input_channels, out_channels=8, kernel_size=3, stride=1),
                                     nn.ReLU(),
-                                    nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1),
+                                    nn.BatchNorm2d(8),
+                                    
+                                    nn.Conv2d(in_channels=8, out_channels=8, kernel_size=3, stride=1),
                                     nn.ReLU(),
-                                    nn.Conv2d(in_channels=64, out_channels=256, kernel_size=3, stride=1),
+                                    nn.BatchNorm2d(8),
+                                    
+                                    nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, stride=1),
                                     nn.ReLU(),
-                                    nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, stride=1),
+                                    nn.BatchNorm2d(16),
+                                    
+                                    nn.MaxPool2d(kernel_size=2, stride=2),
+                                    
+                                    nn.Conv2d(in_channels=16, out_channels=16, kernel_size=3, stride==1),
                                     nn.ReLU(),
+                                    nn.BatchNorm2d(16),
+                                    
+                                    nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride==1),
+                                    nn.ReLU(),
+
+                                    nn.MaxPool2d(kernel_size=3, stride=2),
+                                    
                                     )
 
-        self.latent_code = nn.Linear(in_features=512, out_features=2*latent_dim, bias=True)
+        encoded_dim = 220*76*32
+
+        self.latent_code = nn.Sequential(
+                                        nn.Linear(in_features=encoded_dim, out_features=encoded_dim//8, bias=True),
+                                        nn.ReLU(),
+                                        nn.BatchNorm1d(encoded_dim//8),
+                                        
+                                        nn.Linear(in_features=encoded_dim//8, out_features=encoded_dim//64, bias=True),
+                                        nn.ReLU(),
+                                        nn.BatchNorm1d(encoded_dim//64),
+                                        
+                                        nn.Linear(in_features=encoded_dim//64, out_features=encoded_dim//512, bias=True),
+                                        nn.ReLU(),
+
+                                        nn.Linear(in_features=encoded_dim, out_features=2*latent_dim, bias=True),
+                                        )
+
+        self.latent_code_decoder = nn.Sequential(
+                                                nn.Linear(in_features=latent_dim, encoded_dim, bias=True),
+                                                nn.ReLU(),
+                                                )
 
         self.decoder = nn.Sequential(
-                                    nn.ConvTranspose2d(in_channels=512, out_channels=256, kernel_size=3, stride=1),
+                                    nn.ConvTranspose2d(in_channels=32, out_channels=32, kernel_size=3, stride=2),
                                     nn.ReLU(),
-                                    nn.ConvTranspose2d(in_channels=256, out_channels=64, kernel_size=3, stride=1),
+                                    
+                                    nn.ConvTranspose2d(in_channels=32, out_channels=16, kernel_size=3, stride=1),
                                     nn.ReLU(),
-                                    nn.ConvTranspose2d(in_channels=64, out_channels=32, kernel_size=3, stride=1),
+                                    
+                                    nn.ConvTranspose2d(in_channels=16, out_channels=16, kernel_size=3, stride=1),
                                     nn.ReLU(),
-                                    nn.ConvTranspose2d(in_channels=32, out_channels=out_channels, kernel_size=3, stride=1),
+                                    
+                                    nn.ConvTranspose2d(in_channels=16, out_channels=16, kernel_size=3, stride=2),
                                     nn.ReLU(),
+                                    
+                                    nn.ConvTranspose2d(in_channels=16, out_channels=8, kernel_size=3, stride=1),
+                                    nn.ReLU(),
+
+                                    nn.ConvTranspose2d(in_channels=8, out_channels=8, kernel_size=3, stride=1),
+                                    nn.ReLU(),
+
+                                    nn.ConvTranspose2d(in_channels=8, out_channels=2, kernel_size=3, stride=1),
+                                    nn.tanh(),
                                     )
         
         self.optimizer = torch.optim.Adam(self.parameters(), lr=lr)
@@ -67,8 +114,9 @@ class gen(nn.Module):
         noise_params = self.latent_code(encoded_vec)
         mean, logvar = noise_params[:,0:self.latent_dim], noise_params[:,self.latent_dim:]
         sample = self.sample_noise(mean, logvar)
-
-        optical_flow = self.decoder(sample)
+        
+        decoded_latent_code = self.latent_code_decoder(sample),
+        optical_flow = self.decoder(decoded_latent_code)
         
         return optical_flow, mean, logvar
 

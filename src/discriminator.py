@@ -13,64 +13,38 @@ class disc(nn.Module):
         super(disc, self).__init__()
 
         self.conv_model = nn.Sequential(
-                                    nn.Conv2d(in_channels=input_channels, out_channels=8, kernel_size=3, stride=1),
-                                    nn.ReLU(),
-                                    nn.BatchNorm2d(8),
-                                    
-                                    nn.Conv2d(in_channels=8, out_channels=8, kernel_size=3, stride=1),
-                                    nn.ReLU(),
-                                    nn.BatchNorm2d(8),
-                                    
-                                    nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, stride=1),
-                                    nn.ReLU(),
-                                    nn.BatchNorm2d(16),
-                                    
+                                    nn.Conv2d(in_channels=input_channels, out_channels=4, kernel_size=3, stride=1),
                                     nn.MaxPool2d(kernel_size=2, stride=2),
-                                    
-                                    nn.Conv2d(in_channels=16, out_channels=16, kernel_size=3, stride=1),
                                     nn.ReLU(),
-                                    nn.BatchNorm2d(16),
+                                    nn.BatchNorm2d(4),
                                     
-                                    nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=1),
-                                    nn.ReLU(),
-                                    nn.BatchNorm2d(32),
-
+                                    nn.Conv2d(in_channels=4, out_channels=8, kernel_size=3, stride=2),
                                     nn.MaxPool2d(kernel_size=3, stride=2),
-
-                                    nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=1),
                                     nn.ReLU(),
-                                    nn.BatchNorm2d(32),
-
-                                    nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1),
+                                    nn.BatchNorm2d(8),
+                                    
+                                    nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, stride=2),
+                                    nn.MaxPool2d(kernel_size=3, stride=2),
                                     nn.ReLU(),
-                                    nn.BatchNorm2d(64),
-
-                                    nn.MaxPool2d(kernel_size=2, stride=2),
-
-                                    nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1),
-                                    nn.ReLU(),
-                                    nn.BatchNorm2d(64),
-
-                                    nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1),
-                                    nn.ReLU(),
-                                    nn.BatchNorm2d(128),
-
-                                    nn.MaxPool2d(kernel_size=2, stride=2), # 51 x 16 x 128
+                                    nn.BatchNorm2d(16),
                                     )
         
-        linear_input = 51*16*128
+        encoded_dim = 16 * 27 * 9
         self.linear = nn.Sequential(
-                                    nn.Linear(in_features=linear_input, out_features=linear_input//4, bias=True), #104448 -> 26112
-                                    nn.ReLU(),
-                                    nn.BatchNorm1d(linear_input//4),
-                                    nn.Linear(in_features=linear_input//4, out_features=linear_input//16, bias=True), #26112 -> 6528
-                                    nn.ReLU(),
-                                    nn.BatchNorm1d(linear_input//16),
-                                    nn.Linear(in_features=linear_input//16, out_features=linear_input//64, bias=True), #6528 -> 1632
-                                    nn.ReLU(),
-                                    nn.BatchNorm1d(linear_input//64),
-                                    nn.Linear(in_features=linear_input//64, out_features=1, bias=True), #1632 -> 1
-                                    )
+                                        nn.Linear(in_features=encoded_dim, out_features=encoded_dim//9, bias=True),
+                                        nn.ReLU(),
+                                        nn.BatchNorm1d(encoded_dim//9),
+                                        
+                                        nn.Linear(in_features=encoded_dim//9, out_features=encoded_dim//36, bias=True),
+                                        nn.ReLU(),
+                                        nn.BatchNorm1d(encoded_dim//36),
+
+                                        nn.Linear(in_features=encoded_dim//36, out_features=encoded_dim//108, bias=True),
+                                        nn.ReLU(),
+                                        nn.BatchNorm1d(encoded_dim//108),
+                                        
+                                        nn.Linear(in_features=encoded_dim//108, out_features=encoded_dim//(8*27*9), bias=True),
+                                        )
 
         self.optimizer = torch.optim.Adam(self.parameters(), lr=lr)
 

@@ -8,7 +8,7 @@ def parse_arguments():
 
     parser.add_argument('--lrd', dest='lr_disc', type=float, default=1e-3, help='learning rate_for_discriminator')
     parser.add_argument('--lrg', dest='lr_gen', type=float, default=1e-3, help='learning rate_for_generator')
-    parser.add_argument('--data-dir', dest='data_dir', type=str, default="../dataset/train_data/", help='path to data directory')
+    parser.add_argument('--data-dir', dest='data_dir', type=str, default="../data_scene_flow_multiview/training/image_2/", help='path to data directory')
     parser.add_argument('--num-epochs', dest='num_epochs', type=int, default=60, help='number of epochs')
     parser.add_argument('--checkpoint', dest='checkpoint_path', type=str, default=None, help='path of a saved_checkpoint')
     parser.add_argument('--train', dest='train', type=int, default=0, help='0 to test the model, 1 to train the model')

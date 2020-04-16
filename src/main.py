@@ -7,9 +7,10 @@ from generator import *
 from discriminator import *
 import pdb
 from utils import *
-from torch.utils.data import Dataloader
+from torch.utils.data import dataloader
 from torchvision.transforms import transforms
 from datetime import datetime
+from DataLoader import *
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -21,7 +22,8 @@ def main():
     num_epochs = args.num_epochs
     data_dir = args.data_dir
     save_interval = args.save_interval
-    
+
+
     dataset = KITTIDataset(folder_name=data_dir,
     transform=transforms.Compose([RandomCrop([320, 896]),
         Normalize(),
@@ -31,8 +33,7 @@ def main():
 
     dataloader = DataLoader(dataset, batch_size = 20, shuffle = True, num_workers = 4)
 
-
-    ## create required directories
+    # create required directories
     results_dir = os.path.join(os.getcwd(), "results")
     models_dir = os.path.join(os.getcwd(), "saved_models")
     
@@ -58,55 +59,60 @@ def main():
         losses_D = []
         losses_G = []
 
-        data        = np.load('./data/0.npz')
-        frames      = data['arr_0']
-    
-        for batch_ndx, sample in enumerate(dataloader):
-            print(sample['frame1'].shape)
+        
 
-            # train discriminator
-            
-            with torch.no_grad():
-                optical_flow = model_gen(frames)
-                # frame2_fake = image_warp(X_train[:,0:3],optical_flow,device)
-
-            outDis_real = model_disc(X_train[:,3:])
+        # for batch_ndx, sample in enumerate(dataloader):
 
             
-            lossD_real = torch.log(outDis_real)
 
-            outDis_fake = model_disc(frame2_fake)
+        # my data 
+        frames =  np.random.randint(0, high=1, size=(4,2,320,896))
+        frames =  torch.tensor(frames).to(DEVICE, dtype=torch.float)
+        frames1 = frames[:,0:1,:,:]
 
-            lossD_fake = torch.log(1.0 - outDis_fake)
-            loss_dis = lossD_real + lossD_fake
-            loss_dis = -0.5*loss_dis.mean()
+        # train discriminator
+        pdb.set_trace()
+        with torch.no_grad():
+            optical_flow = model_gen(frames)
+            frame2_fake = warp(frames1,optical_flow)
 
-            # calculate customized GAN loss for discriminator
-            
-            model_disc.optimizer.zero_grad()
-            loss_dis.backward()
-            optim_dis.step()
-            
-            losses_D.append(loss_dis.item())
+        outDis_real = model_disc(X_train[:,3:])
 
-            # train generator
-            model_disc.optimizer.zero_grad()
+        
+        lossD_real = torch.log(outDis_real)
 
-            outDis_fake = model_disc(frame2_fake)
-            
-            loss_gen = -torch.log(outDis_fake)
-            loss_gen = loss_gen.mean()
+        outDis_fake = model_disc(frame2_fake)
 
-            model_gen.optimizer.zero_grad() 
-            loss_gen.backward()
-            model_gen.optimizer.step()
+        lossD_fake = torch.log(1.0 - outDis_fake)
+        loss_dis = lossD_real + lossD_fake
+        loss_dis = -0.5*loss_dis.mean()
 
-            losses_G.append(loss_gen.item())
-            
-            # print loss while training
-            if (n_batch + 1) % 30 == 0:
-                print("Epoch: [{}/{}], Batch: {}, Discriminator loss: {}, Generator loss: {}".format(
-                    epoch, num_epochs, n_batch, loss_dis.item(), loss_gen.item()))
+        # calculate customized GAN loss for discriminator
+        
+        model_disc.optimizer.zero_grad()
+        loss_dis.backward()
+        optim_dis.step()
+        
+        losses_D.append(loss_dis.item())
+
+        # train generator
+        model_disc.optimizer.zero_grad()
+
+        outDis_fake = model_disc(frame2_fake)
+        
+        loss_gen = -torch.log(outDis_fake)
+        loss_gen = loss_gen.mean()
+
+        model_gen.optimizer.zero_grad() 
+        loss_gen.backward()
+        model_gen.optimizer.step()
+
+        losses_G.append(loss_gen.item())
+        
+        # print loss while training
+        if (n_batch + 1) % 30 == 0:
+            print("Epoch: [{}/{}], Batch: {}, Discriminator loss: {}, Generator loss: {}".format(
+                epoch, num_epochs, n_batch, loss_dis.item(), loss_gen.item()))
 
         losses_GG.append(np.mean(np.array(losses_G)))
         losses_DD.append(np.mean(np.array(losses_D)))

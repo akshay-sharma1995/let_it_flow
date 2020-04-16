@@ -58,16 +58,21 @@ class gen(nn.Module):
         self.decoder = nn.Sequential(
                                     nn.ConvTranspose2d(in_channels=16, out_channels=16, kernel_size=3, stride=2),
                                     nn.ReLU(),
+                                    nn.BatchNorm2d(16),
                                     nn.ConvTranspose2d(in_channels=16, out_channels=8, kernel_size=3, stride=2),
+                                    nn.ReLU(),
                                     nn.BatchNorm2d(8),
 
                                     nn.ConvTranspose2d(in_channels=8, out_channels=8, kernel_size=3, stride=2),
                                     nn.ReLU(),
+                                    nn.BatchNorm2d(8),
                                     nn.ConvTranspose2d(in_channels=8, out_channels=4, kernel_size=3, stride=2),
+                                    nn.ReLU(),
                                     nn.BatchNorm2d(4),
 
                                     nn.ConvTranspose2d(in_channels=4, out_channels = 4, kernel_size=2, stride=2),
                                     nn.ReLU(),
+                                    nn.BatchNorm2d(4),
                                     nn.ConvTranspose2d(in_channels=4, out_channels = 1, kernel_size=3, stride=1),
                                     )
         
@@ -99,12 +104,9 @@ class gen(nn.Module):
         decoded_latent_code = decoded_latent_code.reshape(decoded_latent_code.shape[0],16, 27, 9)
         optical_flow = self.decoder(decoded_latent_code)
 
-        optical_flow = torch.clamp(optical_flow,-5,5)
-        
-        # clamped_optical_flow = torch.stack(torch.clamp(optical_flow[:,0:1,:,:],min=-1.0*height, max=1.0*height),
-        #                                                 optical_flow[:,1:2,:,:],min=-1.0*width, max=1.0*width),
+        optical_flow = 5 * torch.tanh(optical_flow)
 
-        return optical_flow, mean, logvar #clamped_optical_flow
+        return optical_flow, mean, logvar 
 
 
 

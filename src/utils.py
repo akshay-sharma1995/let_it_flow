@@ -121,41 +121,41 @@ def image_warp(im,flow,device):
 	return warped
 
 def warp( x, flo):
-	"""
-	warp an image/tensor (im2) back to im1, according to the optical flow
-	x: [B, C, H, W] (im2) (Pytorch tensor)
-	flo: [B, 2, H, W] flow (Pytorch tensor)
-	"""
-	B, C, H, W = x.size()
-	# mesh grid 
-	xx = torch.arange(0, W).view(1,-1).repeat(H,1)
-	yy = torch.arange(0, H).view(-1,1).repeat(1,W)
-	xx = xx.view(1,1,H,W).repeat(B,1,1,1)
-	yy = yy.view(1,1,H,W).repeat(B,1,1,1)
-	grid = torch.cat((xx,yy),1).float()
+    """
+    warp an image/tensor (im2) back to im1, according to the optical flow
+    x: [B, C, H, W] (im2) (Pytorch tensor)
+    flo: [B, 2, H, W] flow (Pytorch tensor)
+    """
+    B, C, H, W = x.size()
+    # mesh grid 
+    xx = torch.arange(0, W).view(1,-1).repeat(H,1)
+    yy = torch.arange(0, H).view(-1,1).repeat(1,W)
+    xx = xx.view(1,1,H,W).repeat(B,1,1,1)
+    yy = yy.view(1,1,H,W).repeat(B,1,1,1)
+    grid = torch.cat((xx,yy),1).float()
 
-	if x.is_cuda:
-		grid = grid.to(x.device)
-	vgrid = grid + flo
+    if x.is_cuda:
+            grid = grid.to(x.device)
+    vgrid = grid + flo
 
-	# scale grid to [-1,1] 
-	vgrid[:,0,:,:] = 2.0*vgrid[:,0,:,:].clone() / max(W-1,1)-1.0
-	vgrid[:,1,:,:] = 2.0*vgrid[:,1,:,:].clone() / max(H-1,1)-1.0
+    # scale grid to [-1,1] 
+    vgrid[:,0,:,:] = 2.0*vgrid[:,0,:,:].clone() / max(W-1,1)-1.0
+    vgrid[:,1,:,:] = 2.0*vgrid[:,1,:,:].clone() / max(H-1,1)-1.0
 
-	vgrid = vgrid.permute(0,2,3,1)        
-	output = nn.functional.grid_sample(x, vgrid)
-	mask = torch.ones(x.shape()).to(x.device)
-	mask = nn.functional.grid_sample(mask, vgrid)
+    vgrid = vgrid.permute(0,2,3,1)        
+    output = nn.functional.grid_sample(x, vgrid)
+    mask = torch.ones(x.shape).to(x.device)
+    mask = nn.functional.grid_sample(mask, vgrid)
 
-	# if W==128:
+    # if W==128:
 
-		# np.save('mask.npy', mask.cpu().data.numpy())
-		# np.save('warp.npy', output.cpu().data.numpy())
-	
-	mask[mask<0.9999] = 0
-	mask[mask>0] = 1
-	
-	return output*mask
+            # np.save('mask.npy', mask.cpu().data.numpy())
+            # np.save('warp.npy', output.cpu().data.numpy())
+    
+    mask[mask<0.9999] = 0
+    mask[mask>0] = 1
+    
+    return output*mask
 
 # def conv(c_in, c_out, K, S, P=None, d=None , activations=nn.ReLU(), batchnorm=True):
     

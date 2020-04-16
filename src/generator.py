@@ -90,7 +90,6 @@ class gen(nn.Module):
         x: (batch_size, 2*channels, height, width)
             Each sample in the batch is a preprocessed pair of 2 consecutive images of dim (channels, height, width)
         '''
-        
         height = x.shape[2]
         width = x.shape[3]
 
@@ -101,7 +100,7 @@ class gen(nn.Module):
         sample = self.sample_noise(mean, logvar)
         
         decoded_latent_code = self.latent_code_decoder(sample)
-        decoded_latent_code = decoded_latent_code.reshape(decoded_latent_code.shape[0],16, 27, 9)
+        decoded_latent_code = decoded_latent_code.reshape(decoded_latent_code.shape[0],16, 9, 27)
 
         optical_flow = self.decoder(decoded_latent_code)
 

@@ -61,61 +61,64 @@ def main():
 
         
 
-        # for batch_ndx, sample in enumerate(dataloader):
+        for batch_ndx, frames in enumerate(dataloader):
+
+            # my data 
+            # frames =  np.random.randint(0, high=1, size=(4,2,320,896))
+            # frames =  torch.tensor(frames).to(DEVICE, dtype=torch.float)
+            frames = frames.to(DEVICE).float()
+            frames1 = frames[:,0:1,:,:]
+
+            # train discriminator
+            with torch.no_grad():
+                optical_flow = model_gen(frames)
+                frame2_fake = warp(frames1,optical_flow)
+
+            outDis_real = model_disc(frames1)
 
             
+            lossD_real = torch.log(outDis_real)
 
-        # my data 
-        frames =  np.random.randint(0, high=1, size=(4,2,320,896))
-        frames =  torch.tensor(frames).to(DEVICE, dtype=torch.float)
-        frames1 = frames[:,0:1,:,:]
+            outDis_fake = model_disc(frame2_fake)
 
-        # train discriminator
-        pdb.set_trace()
-        with torch.no_grad():
-            optical_flow = model_gen(frames)
-            frame2_fake = warp(frames1,optical_flow)
+            lossD_fake = torch.log(1.0 - outDis_fake)
+            loss_dis = lossD_real + lossD_fake
+            loss_dis = -0.5*loss_dis.mean()
 
-        outDis_real = model_disc(X_train[:,3:])
+            # calculate customized GAN loss for discriminator
+            
+            model_disc.optimizer.zero_grad()
+            loss_dis.backward()
+            model_disc.optimizer.step()
+            
+            losses_D.append(loss_dis.item())
 
+            # train generator
+            model_disc.optimizer.zero_grad()
+
+            outDis_fake = model_disc(frame2_fake)
+            
+            loss_gen = -torch.log(outDis_fake)
+            loss_gen = loss_gen.mean()
+
+            model_gen.optimizer.zero_grad() 
+            loss_gen.backward()
+            model_gen.optimizer.step()
+
+            losses_G.append(loss_gen.item())
         
-        lossD_real = torch.log(outDis_real)
-
-        outDis_fake = model_disc(frame2_fake)
-
-        lossD_fake = torch.log(1.0 - outDis_fake)
-        loss_dis = lossD_real + lossD_fake
-        loss_dis = -0.5*loss_dis.mean()
-
-        # calculate customized GAN loss for discriminator
-        
-        model_disc.optimizer.zero_grad()
-        loss_dis.backward()
-        optim_dis.step()
-        
-        losses_D.append(loss_dis.item())
-
-        # train generator
-        model_disc.optimizer.zero_grad()
-
-        outDis_fake = model_disc(frame2_fake)
-        
-        loss_gen = -torch.log(outDis_fake)
-        loss_gen = loss_gen.mean()
-
-        model_gen.optimizer.zero_grad() 
-        loss_gen.backward()
-        model_gen.optimizer.step()
-
-        losses_G.append(loss_gen.item())
-        
-        # print loss while training
-        if (n_batch + 1) % 30 == 0:
-            print("Epoch: [{}/{}], Batch: {}, Discriminator loss: {}, Generator loss: {}".format(
-                epoch, num_epochs, n_batch, loss_dis.item(), loss_gen.item()))
-
+            print("Epoch: [{}/{}], Batch_num: {}, Discriminator loss: {}, Generator loss: {}".format(
+                epoch, num_epochs, batch_ndx, losses_D[-1], losses_G[-1]))
         losses_GG.append(np.mean(np.array(losses_G)))
         losses_DD.append(np.mean(np.array(losses_D)))
+        
+        print("Epoch: [{}/{}], Discriminator loss: {}, Generator loss: {}".format(
+            epoch, num_epochs, losses_DD[-1], losses_GG[-1]))
+        # print loss while training
+        # if (epoch+1) % 30 == 0:
+            # print("Epoch: [{}/{}], Discriminator loss: {}, Generator loss: {}".format(
+                # epoch, num_epochs, losses_DD[-1], losses_GG[-1]))
+
 
     plt.title("Generator Loss")
     plt.ylabel('Loss')

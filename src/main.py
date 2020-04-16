@@ -82,9 +82,9 @@ def main():
             frames1 = frames[:,0:1,:,:]
             frames2_real = frames[:,1:2,:,:]
             # train discriminator
-            # with torch.no_grad():
-            optical_flow = model_gen(frames)
-            frames2_fake = warp(frames1,optical_flow)
+            with torch.no_grad():
+                optical_flow = model_gen(frames)
+                frames2_fake = warp(frames1,optical_flow)
 
             outDis_real = model_disc(frames2_real)
 
@@ -107,6 +107,9 @@ def main():
             # train generator
             model_disc.optimizer.zero_grad()
             
+            optical_flow = model_gen(frames)
+            frames2_fake = warp(frames1,optical_flow)
+
             outDis_fake = model_disc(frames2_fake)
             
             loss_gen = -torch.log(outDis_fake)

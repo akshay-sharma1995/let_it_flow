@@ -22,9 +22,19 @@ def main():
     data_dir = args.data_dir
     save_interval = args.save_interval
     
+    dataset = KITTIDataset(folder_name=data_dir,
+    transform=transforms.Compose([RandomCrop([320, 896]),
+        Normalize(),
+        ToTensor()
+    ]
+    ))
+
+    dataloader = DataLoader(dataset, batch_size = 20, shuffle = True, num_workers = 4)
+
+
     ## create required directories
-    results_dir = os.path.join(os.cwd(), "results")
-    models_dir = os.path.join(os.cwd(), "saved_models")
+    results_dir = os.path.join(os.getcwd(), "results")
+    models_dir = os.path.join(os.getcwd(), "saved_models")
     
     timestamp =  datetime.now().strftime("%Y-%m-%d_%I-%M-%S_%p")
     
@@ -38,7 +48,7 @@ def main():
     model_gen = gen().to(DEVICE)
     model_disc = disc().to(DEVICE)
 
-    criterion = nn.BCELoss()
+    # criterion = nn.BCELoss()
 
     losses_GG = []
     losses_DD = []
@@ -51,16 +61,8 @@ def main():
         data        = np.load('./data/0.npz')
         frames      = data['arr_0']
     
-        for n_batch, sampled_batch in enumerate(dataloader):
-            X_train = sampled_batch
-
-            # frames = np.swapaxes(frames,0,2)
-            # frames = np.swapaxes(frames,1,2)
-            # frames = np.expand_dims(frames,axis=0)
-            # frames = torch.tensor(frames, device = DEVICE).float()
-            # frame1      = frames[:,0:1,:,:]
-            # frame2_real = frames[:,1:2,:,:]
-            
+        for batch_ndx, sample in enumerate(dataloader):
+            print(sample['frame1'].shape)
 
             # train discriminator
             
@@ -69,14 +71,11 @@ def main():
                 # frame2_fake = image_warp(X_train[:,0:3],optical_flow,device)
 
             outDis_real = model_disc(X_train[:,3:])
-            # label_real  = torch.ones([frame2_real.shape[0],1]).to(device)
-            # lossD_real  = criterion(outDis_real, label_real)
+
             
             lossD_real = torch.log(outDis_real)
 
             outDis_fake = model_disc(frame2_fake)
-            # label_fake  = torch.zeros([frame2_real.shape[0],1]).to(device)
-            # lossD_fake  = criterion(outDis_fake, label_fake)
 
             lossD_fake = torch.log(1.0 - outDis_fake)
             loss_dis = lossD_real + lossD_fake
@@ -94,8 +93,6 @@ def main():
             model_disc.optimizer.zero_grad()
 
             outDis_fake = model_disc(frame2_fake)
-            # label_real  = torch.ones([y_real.shape[0],1]).to(device)
-            # loss_gen  = criterion(outDis_fake, label_real)
             
             loss_gen = -torch.log(outDis_fake)
             loss_gen = loss_gen.mean()

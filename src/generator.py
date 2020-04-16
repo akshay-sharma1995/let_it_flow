@@ -38,11 +38,11 @@ class gen(nn.Module):
                                     
                                     nn.MaxPool2d(kernel_size=2, stride=2),
                                     
-                                    nn.Conv2d(in_channels=16, out_channels=16, kernel_size=3, stride==1),
+                                    nn.Conv2d(in_channels=16, out_channels=16, kernel_size=3, stride=1),
                                     nn.ReLU(),
                                     nn.BatchNorm2d(16),
                                     
-                                    nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride==1),
+                                    nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=1),
                                     nn.ReLU(),
 
                                     nn.MaxPool2d(kernel_size=3, stride=2),
@@ -67,7 +67,7 @@ class gen(nn.Module):
                                         )
 
         self.latent_code_decoder = nn.Sequential(
-                                                nn.Linear(in_features=latent_dim, encoded_dim, bias=True),
+                                                nn.Linear(in_features=latent_dim, out_features=encoded_dim, bias=True),
                                                 nn.ReLU(),
                                                 )
 

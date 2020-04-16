@@ -27,31 +27,31 @@ class disc(nn.Module):
                                     
                                     nn.MaxPool2d(kernel_size=2, stride=2),
                                     
-                                    nn.Conv2d(in_channels=16, out_channels=16, kernel_size=3, stride==1),
+                                    nn.Conv2d(in_channels=16, out_channels=16, kernel_size=3, stride=1),
                                     nn.ReLU(),
                                     nn.BatchNorm2d(16),
                                     
-                                    nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride==1),
+                                    nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=1),
                                     nn.ReLU(),
                                     nn.BatchNorm2d(32),
 
                                     nn.MaxPool2d(kernel_size=3, stride=2),
 
-                                    nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride==1),
+                                    nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=1),
                                     nn.ReLU(),
                                     nn.BatchNorm2d(32),
 
-                                    nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride==1),
+                                    nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1),
                                     nn.ReLU(),
                                     nn.BatchNorm2d(64),
 
                                     nn.MaxPool2d(kernel_size=2, stride=2),
 
-                                    nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride==1),
+                                    nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1),
                                     nn.ReLU(),
                                     nn.BatchNorm2d(64),
 
-                                    nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride==1),
+                                    nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1),
                                     nn.ReLU(),
                                     nn.BatchNorm2d(128),
 
@@ -69,7 +69,7 @@ class disc(nn.Module):
                                     nn.Linear(in_features=linear_input//16, out_features=linear_input//64, bias=True), #6528 -> 1632
                                     nn.ReLU(),
                                     nn.BatchNorm1d(linear_input//64),
-                                    nn.Linear(in_features=linear_input//64, 1, bias=True), #1632 -> 1
+                                    nn.Linear(in_features=linear_input//64, out_features=1, bias=True), #1632 -> 1
                                     )
 
         self.optimizer = torch.optim.Adam(self.parameters(), lr=lr)

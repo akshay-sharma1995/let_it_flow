@@ -7,7 +7,6 @@ from generator import *
 from discriminator import *
 import pdb
 from utils import *
-from dataset import image_pair_dataset
 from torch.utils.data import Dataloader
 from torchvision.transforms import transforms
 from datetime import datetime
@@ -34,9 +33,6 @@ def main():
     
     make_dirs([results_dir, models_dir, curr_dir])
     
-    ## loading dataset, create dataloader
-    train_dataset = image_pair_dataset(root_dir=data_dir, transform=transforms.Compose([ToTensor()]))
-    train_dataloader = Dataloader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4)
 
     ## create generator and discriminator instances
     model_gen = gen().to(DEVICE)

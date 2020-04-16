@@ -2,6 +2,7 @@ import os
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import pdb
 import sys
 
@@ -57,6 +58,6 @@ class disc(nn.Module):
         batch_size = x.shape[0]
         out = self.conv_model(x)
         out = out.reshape(batch_size,-1)
-        prob = nn.Sigmoid(self.linear(out))
+        prob = torch.sigmoid(self.linear(out))
 
         return out

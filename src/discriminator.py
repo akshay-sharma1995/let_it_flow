@@ -60,4 +60,4 @@ class disc(nn.Module):
         out = out.reshape(batch_size,-1)
         prob = torch.sigmoid(self.linear(out))
 
-        return out
+        return prob

@@ -11,6 +11,7 @@ from torch.utils.data import dataloader
 from torchvision.transforms import transforms
 from datetime import datetime
 from DataLoader import *
+import matplotlib.pyplot as plt
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -26,12 +27,12 @@ def main():
 
     dataset = KITTIDataset(folder_name=data_dir,
     transform=transforms.Compose([RandomCrop([320, 896]),
-        Normalize(),
+        # Normalize(),
         ToTensor()
     ]
     ))
 
-    dataloader = DataLoader(dataset, batch_size = 20, shuffle = True, num_workers = 4)
+    dataloader = DataLoader(dataset, batch_size = 2, shuffle = True, num_workers = 4)
 
     # create required directories
     results_dir = os.path.join(os.getcwd(), "results")
@@ -54,6 +55,17 @@ def main():
     losses_GG = []
     losses_DD = []
     
+# # Optical Flow Sanity Check
+#     flow_sample = torch.ones([1,2,320,896], dtype = torch.float32)*0
+#     sample = dataset[0]
+#     sample_1 = sample[0]
+#     sample_1 = sample_1.view(1,1,320,896)
+#     plt.show()
+
+#     output = warp(sample_1.float(), flow_sample)
+#     imgplot = plt.imshow(output[0][0])
+#     plt.show()
+
     # train the GAN model
     for epoch in range(num_epochs):
         losses_D = []
@@ -68,18 +80,17 @@ def main():
             # frames =  torch.tensor(frames).to(DEVICE, dtype=torch.float)
             frames = frames.to(DEVICE).float()
             frames1 = frames[:,0:1,:,:]
-
+            frames2_real = frames[:,1:2,:,:]
             # train discriminator
             with torch.no_grad():
                 optical_flow = model_gen(frames)
-                frame2_fake = warp(frames1,optical_flow)
+                frames2_fake = warp(frames1,optical_flow)
 
-            outDis_real = model_disc(frames1)
+            outDis_real = model_disc(frames2_real)
 
-            
             lossD_real = torch.log(outDis_real)
 
-            outDis_fake = model_disc(frame2_fake)
+            outDis_fake = model_disc(frames2_fake)
 
             lossD_fake = torch.log(1.0 - outDis_fake)
             loss_dis = lossD_real + lossD_fake
@@ -96,7 +107,7 @@ def main():
             # train generator
             model_disc.optimizer.zero_grad()
 
-            outDis_fake = model_disc(frame2_fake)
+            outDis_fake = model_disc(frames2_fake)
             
             loss_gen = -torch.log(outDis_fake)
             loss_gen = loss_gen.mean()

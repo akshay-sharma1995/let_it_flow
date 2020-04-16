@@ -73,7 +73,7 @@ class gen(nn.Module):
                                     nn.ConvTranspose2d(in_channels=4, out_channels = 4, kernel_size=2, stride=2),
                                     nn.ReLU(),
                                     nn.BatchNorm2d(4),
-                                    nn.ConvTranspose2d(in_channels=4, out_channels = 1, kernel_size=3, stride=1),
+                                    nn.ConvTranspose2d(in_channels=4, out_channels = 2, kernel_size=3, stride=1),
                                     )
         
         self.optimizer = torch.optim.Adam(self.parameters(), lr=lr)
@@ -90,7 +90,7 @@ class gen(nn.Module):
         x: (batch_size, 2*channels, height, width)
             Each sample in the batch is a preprocessed pair of 2 consecutive images of dim (channels, height, width)
         '''
-        # pdb.set_trace()
+        
         height = x.shape[2]
         width = x.shape[3]
 
@@ -102,11 +102,12 @@ class gen(nn.Module):
         
         decoded_latent_code = self.latent_code_decoder(sample)
         decoded_latent_code = decoded_latent_code.reshape(decoded_latent_code.shape[0],16, 27, 9)
+
         optical_flow = self.decoder(decoded_latent_code)
 
         optical_flow = 5 * torch.tanh(optical_flow)
 
-        return optical_flow, mean, logvar 
+        return optical_flow 
 
 
 

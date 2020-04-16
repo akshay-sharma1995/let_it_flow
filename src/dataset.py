@@ -5,7 +5,7 @@ import os
 
 class image_pair_dataset(Dataset):
 
-  def __init__(self, root_dir, transform=None, channels_first=False)):
+  def __init__(self, root_dir, transform=None, channels_first=False):
 
   # def __init__(self, root_dir, transform=None, channels_first=False):
   """

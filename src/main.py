@@ -27,7 +27,7 @@ def main():
 
     dataset = KITTIDataset(folder_name=data_dir,
     transform=transforms.Compose([RandomCrop([320, 896]),
-        # Normalize(),
+        Normalize(),
         ToTensor()
     ]
     ))
@@ -106,6 +106,9 @@ def main():
 
             # train generator
             model_disc.optimizer.zero_grad()
+            
+            optical_flow = model_gen(frames)
+            frames2_fake = warp(frames1,optical_flow)
 
             outDis_fake = model_disc(frames2_fake)
             

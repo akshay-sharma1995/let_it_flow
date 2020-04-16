@@ -91,7 +91,6 @@ class gen(nn.Module):
                                     nn.ReLU(),
 
                                     nn.ConvTranspose2d(in_channels=8, out_channels=2, kernel_size=3, stride=1),
-                                    nn.tanh(),
                                     )
         
         self.optimizer = torch.optim.Adam(self.parameters(), lr=lr)
@@ -109,8 +108,9 @@ class gen(nn.Module):
             Each sample in the batch is a preprocessed pair of 2 consecutive images of dim (channels, height, width)
         '''
         
+        batch_size, channels, height, width = x.shape()
+
         encoded_vec = self.encoder(x)
-        
         noise_params = self.latent_code(encoded_vec)
         mean, logvar = noise_params[:,0:self.latent_dim], noise_params[:,self.latent_dim:]
         sample = self.sample_noise(mean, logvar)
@@ -118,7 +118,10 @@ class gen(nn.Module):
         decoded_latent_code = self.latent_code_decoder(sample),
         optical_flow = self.decoder(decoded_latent_code)
         
-        return optical_flow, mean, logvar
+        clamped_optical_flow = torch.stack(torch.clamp(optical_flow[:,0:1,:,:],min=-1.0*height, max=1.0*height),
+                                                        optical_flow[:,1:2,:,:],min=-1.0*width, max=1.0*width),
+
+        return clamped_optical_flow, mean, logvar
 
 
 

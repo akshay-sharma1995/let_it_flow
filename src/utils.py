@@ -120,7 +120,7 @@ def image_warp(im,flow,device):
 
 	return warped
 
-def warp(self, x, flo):
+def warp( x, flo):
 	"""
 	warp an image/tensor (im2) back to im1, according to the optical flow
 	x: [B, C, H, W] (im2) (Pytorch tensor)
@@ -135,7 +135,7 @@ def warp(self, x, flo):
 	grid = torch.cat((xx,yy),1).float()
 
 	if x.is_cuda:
-		grid = grid.to(x.device())
+		grid = grid.to(x.device)
 	vgrid = grid + flo
 
 	# scale grid to [-1,1] 
@@ -144,10 +144,11 @@ def warp(self, x, flo):
 
 	vgrid = vgrid.permute(0,2,3,1)        
 	output = nn.functional.grid_sample(x, vgrid)
-        mask = torch.ones(x.shape()).to(x.device())
+	mask = torch.ones(x.shape()).to(x.device)
 	mask = nn.functional.grid_sample(mask, vgrid)
 
 	# if W==128:
+
 		# np.save('mask.npy', mask.cpu().data.numpy())
 		# np.save('warp.npy', output.cpu().data.numpy())
 	

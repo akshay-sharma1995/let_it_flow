@@ -4,6 +4,7 @@ from torchvision import transforms, datasets
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+import random
 
 class KITTIDataset(Dataset):
     def __init__(self, folder_name, transform = None):
@@ -42,12 +43,14 @@ class KITTIDataset(Dataset):
                             "_" + frame2_framename + str(frame_id+1) + ".png"
 
         
-        frame1 = np.array(Image.open(frame1_filename).convert('YCbCr').split()[0])
-        frame2 = np.array(Image.open(frame2_filename).convert('YCbCr').split()[0])
+        frame1 = (Image.open(frame1_filename).convert('YCbCr').split()[0])
+        frame2 = (Image.open(frame2_filename).convert('YCbCr').split()[0])
+        # frame1 = np.array(Image.open(frame1_filename).convert('YCbCr').split()[0])
+        # frame2 = np.array(Image.open(frame2_filename).convert('YCbCr').split()[0])
 
-        # sample = {'frame1':frame1, 'frame2':frame2}
+        sample = {'frame1':frame1, 'frame2':frame2}
         
-        sample = np.stack((frame1, frame2), axis=0)
+        # sample = np.stack((frame1, frame2), axis=0)
         # imgplot = plt.imshow(frame1)
         # plt.show()
         # imgplot = plt.imshow(frame2)
@@ -85,7 +88,8 @@ class RandomCrop(object):
         self.new_h = size[0]
         self.new_w = size[1]
     def __call__(self, sample):
-        # frame1, frame2 = sample['frame1'], sample['frame2']
+        frame1, frame2 = sample['frame1'], sample['frame2']
+        sample = np.stack((np.array(frame1), np.array(frame2)), axis=0)
         # h, w = frame1.shape[:2]
         
         h,w = sample.shape[1:]
@@ -106,17 +110,54 @@ class RandomCrop(object):
         return sample
         # return {'frame1': frame1, 'frame2': frame2}
 
+class RandomVerticalFlip(object):
+    def __init__(self, p=0.5):
+        self.p = p
+
+    def __call__(self, sample):
+        frame1, frame2 = sample['frame1'], sample['frame2']
+        if random.random() < self.p:
+            frame1 = transforms.functional.vflip(frame1)
+            frame2 = transforms.functional.vflip(frame2)
+        return {'frame1': frame1, 'frame2': frame2}
+
+class RandomHorizontalFlip(object):
+    def __init__(self, p=0.5):
+        self.p = p
+
+    def __call__(self, sample):
+        frame1, frame2 = sample['frame1'], sample['frame2']
+        if random.random() < self.p:
+            frame1 = transforms.functional.hflip(frame1)
+            frame2 = transforms.functional.hflip(frame2)
+        
+        return {'frame1': frame1, 'frame2': frame2}
+
+
 def main():
     dataset = KITTIDataset(folder_name='../data_scene_flow_multiview/training/image_2/',
-    transform=transforms.Compose([RandomCrop([320, 896]),
+    transform=transforms.Compose([RandomVerticalFlip(), 
+        RandomHorizontalFlip(), 
+        RandomCrop([320, 896]),
         Normalize(),
         ToTensor()
     ]
     ))
 
+    test_dataset = KITTIDataset(folder_name='../data_scene_flow_multiview/testing/image_2/',
+    transform=transforms.Compose([RandomVerticalFlip(), 
+        RandomHorizontalFlip(), 
+        RandomCrop([320, 896]),
+        Normalize(),
+        ToTensor()
+    ]
+    ))
+
+    testloader = DataLoader(test_dataset, batch_size = 20, shuffle = True, num_workers = 4)
+
     dataloader = DataLoader(dataset, batch_size = 20, shuffle = True, num_workers = 4)
 
-    for batch_ndx, sample in enumerate(dataloader):
+    for batch_ndx, sample in enumerate(testloader):
         print(sample.shape)
 if __name__ == "__main__":
     main()

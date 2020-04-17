@@ -25,7 +25,9 @@ def main():
 
 
     dataset = KITTIDataset(folder_name=data_dir,
-    transform=transforms.Compose([RandomCrop([320, 896]),
+    transform=transforms.Compose([RandomVerticalFlip(),
+        RandomHorizontalFlip(),
+        RandomCrop([320, 896]),
         Normalize(),
         ToTensor()
     ]
@@ -130,7 +132,7 @@ def main():
         print("Epoch: [{}/{}], Discriminator loss: {:.4f}, Generator loss: {:.4f}, recons_loss: {:.4f} fake_prob: {:.4f}".format(
             epoch+1, num_epochs, losses_DD[-1], losses_GG[-1], losses_RR[-1], mean_fake_probs_arr[-1]))
         
-        if (epoch+1) % 2 == 0:
+        if (epoch+1) % save_interval == 0:
             save_model(model_disc, epoch, model_disc.optimizer, disc_save_path+"epoch_{}.pth".format(epoch))
             save_model(model_gen, epoch, model_gen.optimizer, gen_save_path+"epoch_{}.pth".format(epoch))
 

@@ -16,12 +16,11 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def save_model(model, epoch, optimizer, loss, path):
+def save_model(model, epoch, optimizer, path):
     torch.save({
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
-                'loss': loss,
                 }, path)
 
 
@@ -156,6 +155,10 @@ def warp( x, flo):
     mask[mask>0] = 1
     
     return output*mask
+
+def scale_grads(parameters, scale):
+    for param in parameters:
+        param.grad *= scale
 
 # def conv(c_in, c_out, K, S, P=None, d=None , activations=nn.ReLU(), batchnorm=True):
     

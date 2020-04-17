@@ -11,7 +11,6 @@ from torch.utils.data import dataloader
 from torchvision.transforms import transforms
 from datetime import datetime
 from DataLoader import *
-import matplotlib.pyplot as plt
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
@@ -32,46 +31,39 @@ def main():
     ]
     ))
 
-    dataloader = DataLoader(dataset, batch_size = 2, shuffle = True, num_workers = 4)
+    dataloader = DataLoader(dataset, batch_size = 32, shuffle = True, num_workers = 4)
 
     # create required directories
     results_dir = os.path.join(os.getcwd(), "results")
-    models_dir = os.path.join(os.getcwd(), "saved_models")
+    # models_dir = os.path.join(os.getcwd(), "saved_models")
     
     timestamp =  datetime.now().strftime("%Y-%m-%d_%I-%M-%S_%p")
-    
-    model_name = os.path.join(models_dir, "{}_lrd_{}_lrg_{}_epochs{}.pth".format(timestamp,lr_disc,lr_gen, num_epochs))
     curr_dir = os.path.join(results_dir, timestamp)
     
-    make_dirs([results_dir, models_dir, curr_dir])
+    disc_save_path = os.path.join(curr_dir, "disc_lrd_{}".format(lr_disc))
+    gen_save_path = os.path.join(curr_dir, "gen_lrg_{}".format(lr_gen))
+
+    make_dirs([results_dir, curr_dir])
     
 
     ## create generator and discriminator instances
     model_gen = gen().to(DEVICE)
     model_disc = disc().to(DEVICE)
-
+    
+    RCLoss = nn.L1Loss()
     # criterion = nn.BCELoss()
 
     losses_GG = []
     losses_DD = []
-    
-# # Optical Flow Sanity Check
-#     flow_sample = torch.ones([1,2,320,896], dtype = torch.float32)*0
-#     sample = dataset[0]
-#     sample_1 = sample[0]
-#     sample_1 = sample_1.view(1,1,320,896)
-#     plt.show()
-
-#     output = warp(sample_1.float(), flow_sample)
-#     imgplot = plt.imshow(output[0][0])
-#     plt.show()
-
+    losses_RR = [] 
+    mean_fake_probs_arr = []
+    std_fake_probs_arr = []
     # train the GAN model
     for epoch in range(num_epochs):
         losses_D = []
         losses_G = []
-
-        
+        losses_Rec = []
+        fake_probs = []
 
         for batch_ndx, frames in enumerate(dataloader):
 
@@ -80,17 +72,18 @@ def main():
             # frames =  torch.tensor(frames).to(DEVICE, dtype=torch.float)
             frames = frames.to(DEVICE).float()
             frames1 = frames[:,0:1,:,:]
-            frames2_real = frames[:,1:2,:,:]
+            frames2 = frames[:,1:2,:,:]
             # train discriminator
             with torch.no_grad():
                 optical_flow = model_gen(frames)
-                frames2_fake = warp(frames1,optical_flow)
+                frame2_fake = warp(frames1,optical_flow)
 
-            outDis_real = model_disc(frames2_real)
+            outDis_real = model_disc(frames1)
 
+            
             lossD_real = torch.log(outDis_real)
 
-            outDis_fake = model_disc(frames2_fake)
+            outDis_fake = model_disc(frame2_fake)
 
             lossD_fake = torch.log(1.0 - outDis_fake)
             loss_dis = lossD_real + lossD_fake
@@ -106,34 +99,45 @@ def main():
 
             # train generator
             model_disc.optimizer.zero_grad()
-            
-            optical_flow = model_gen(frames)
-            frames2_fake = warp(frames1,optical_flow)
 
-            outDis_fake = model_disc(frames2_fake)
+            outDis_fake = model_disc(frame2_fake)
             
+
             loss_gen = -torch.log(outDis_fake)
             loss_gen = loss_gen.mean()
 
+            loss_recons = RCLoss(frame2_fake, frames2)
+            
+            total_gen_loss = loss_gen + loss_recons
+
             model_gen.optimizer.zero_grad() 
-            loss_gen.backward()
+            total_gen_loss.backward()
             model_gen.optimizer.step()
 
             losses_G.append(loss_gen.item())
+            losses_Rec.append(loss_recons.item())
+            fake_probs.extend(outDis_fake.clone().detach().cpu().numpy())
+            
+            print("Epoch: [{}/{}], Batch_num: {}, Discriminator loss: {}, Generator loss: {}, Recons_Loss: {}".format(
+                epoch, num_epochs, batch_ndx, losses_D[-1], losses_G[-1], loss_recons))
+    
+        losses_GG.append(np.mean(losses_G))
+        losses_DD.append(np.mean(losses_D))
+        losses_RR.append(np.mean(losses_Rec))
+        mean_fake_probs_arr.append(np.mean(fake_probs))
+        std_fake_probs_arr.append(np.std(fake_probs))
+
+        print("Epoch: [{}/{}], Discriminator loss: {}, Generator loss: {} fake_prob: {}".format(
+            epoch, num_epochs, losses_DD[-1], losses_GG[-1]), mean_fake_probs_arr[-1] )
         
-            print("Epoch: [{}/{}], Batch_num: {}, Discriminator loss: {}, Generator loss: {}".format(
-                epoch, num_epochs, batch_ndx, losses_D[-1], losses_G[-1]))
-        losses_GG.append(np.mean(np.array(losses_G)))
-        losses_DD.append(np.mean(np.array(losses_D)))
-        
-        print("Epoch: [{}/{}], Discriminator loss: {}, Generator loss: {}".format(
-            epoch, num_epochs, losses_DD[-1], losses_GG[-1]))
-        # print loss while training
-        # if (epoch+1) % 30 == 0:
-            # print("Epoch: [{}/{}], Discriminator loss: {}, Generator loss: {}".format(
-                # epoch, num_epochs, losses_DD[-1], losses_GG[-1]))
+        if (epoch+1) % 5 == 0:
+            save_model(model_disc, epoch, model_disc.optimizer, disc_save_path+"epoch_{}.pth".format(epoch))
+            save_model(model_gen, epoch, model_gen.optimizer, gen_save_path+"epoch_{}.pth".format(epoch))
 
 
+
+
+def save_model(model, epoch, optimizer, loss, path):
     plt.title("Generator Loss")
     plt.ylabel('Loss')
     plt.xlabel('Num of Epochs')

@@ -3,6 +3,7 @@ import pdb
 import os,sys
 import torch
 import torch.nn as nn
+from matplotlib import pyplot as plt
 def parse_arguments():
     parser = argparse.ArgumentParser()
 
@@ -164,6 +165,22 @@ def scale_grads(parameters, scale):
     
         # layers_list = 
         # layer = nn.Sequential(
+
+
+def plot_prop(data, prop_name, save_path):
+    fig = plt.figure(figsize=(16,9))
+    plt.plot(data)
+    plt.xlabel("epochs")
+    plt.ylabel(prop_name)
+    plt.savefig(os.path.join(save_path,prop_name+".png"))
+    
+    plt.close()
+
+def plot_props(data_arr, prop_names, save_path):
+    for data, prop_name in zip(data_arr,prop_names):
+        plot_prop(data, prop_name, save_path)
+
+
 
 
 

@@ -31,7 +31,7 @@ def main():
     ]
     ))
 
-    dataloader = DataLoader(dataset, batch_size = 32, shuffle = True, num_workers = 4)
+    dataloader = DataLoader(dataset, batch_size = 64, shuffle = True, num_workers = 4)
 
     # create required directories
     results_dir = os.path.join(os.getcwd(), "results")
@@ -118,7 +118,7 @@ def main():
             losses_Rec.append(loss_recons.item())
             fake_probs.extend(outDis_fake.clone().detach().cpu().numpy())
             
-            print("Epoch: [{}/{}], Batch_num: {}, Discriminator loss: {}, Generator loss: {}, Recons_Loss: {}".format(
+            print("Epoch: [{}/{}], Batch_num: {}, Discriminator loss: {:.4f}, Generator loss: {:.4f}, Recons_Loss: {:.4f}".format(
                 epoch, num_epochs, batch_ndx, losses_D[-1], losses_G[-1], loss_recons))
     
         losses_GG.append(np.mean(losses_G))
@@ -127,25 +127,16 @@ def main():
         mean_fake_probs_arr.append(np.mean(fake_probs))
         std_fake_probs_arr.append(np.std(fake_probs))
 
-        print("Epoch: [{}/{}], Discriminator loss: {}, Generator loss: {} fake_prob: {}".format(
-            epoch, num_epochs, losses_DD[-1], losses_GG[-1]), mean_fake_probs_arr[-1] )
+        print("Epoch: [{}/{}], Discriminator loss: {:.4f}, Generator loss: {:.4f}, recons_loss: {:.4f} fake_prob: {:.4f}".format(
+            epoch+1, num_epochs, losses_DD[-1], losses_GG[-1], losses_RR[-1], mean_fake_probs_arr[-1]))
         
-        if (epoch+1) % 5 == 0:
+        if (epoch+1) % 2 == 0:
             save_model(model_disc, epoch, model_disc.optimizer, disc_save_path+"epoch_{}.pth".format(epoch))
             save_model(model_gen, epoch, model_gen.optimizer, gen_save_path+"epoch_{}.pth".format(epoch))
 
-
-
-
-def save_model(model, epoch, optimizer, loss, path):
-    plt.title("Generator Loss")
-    plt.ylabel('Loss')
-    plt.xlabel('Num of Epochs')
-    plt.plot(losses_G)
-
-    plt.show()
-
-    
+    plot_props([losses_GG, losses_DD, losses_RR, mean_fake_probs_arr],
+                ["Generator_loss", "Discriminator_loss", "Reconstruction_loss", "disc_fake_prob"],
+                curr_dir)
 
 
 if __name__ == "__main__":

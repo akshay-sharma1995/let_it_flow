@@ -106,7 +106,7 @@ class gen(nn.Module):
 
         optical_flow = 5 * torch.tanh(optical_flow)
 
-        return optical_flow 
+        return optical_flow, mean, logvar
 
 
 

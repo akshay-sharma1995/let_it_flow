@@ -2,7 +2,7 @@ import os, sys
 import pdb
 import argparse
 import torch
-from losses import *
+import losses
 from generator import *
 from discriminator import *
 import pdb
@@ -44,8 +44,6 @@ def main():
     curr_dir = os.path.join(results_dir, timestamp)
     
     make_dirs([results_dir, models_dir, curr_dir])
-
-    RCLoss = ReconstructionLoss()
     
 
     ## create generator and discriminator instances
@@ -72,8 +70,8 @@ def main():
     for epoch in range(num_epochs):
         losses_D = []
         losses_G = []
-        losses_G_Enc = []
-        losses_G_Dec = []
+
+        
 
         for batch_ndx, frames in enumerate(dataloader):
 
@@ -98,8 +96,6 @@ def main():
             loss_dis = lossD_real + lossD_fake
             loss_dis = -0.5*loss_dis.mean()
 
-            RConLoss = RCLoss.ReturnLoss(frames2_fake,frames2_real)
-
             # calculate customized GAN loss for discriminator
             
             model_disc.optimizer.zero_grad()
@@ -109,7 +105,7 @@ def main():
             losses_D.append(loss_dis.item())
 
             # train generator
-            
+            model_disc.optimizer.zero_grad()
             
             optical_flow = model_gen(frames)
             frames2_fake = warp(frames1,optical_flow)
@@ -119,24 +115,11 @@ def main():
             loss_gen = -torch.log(outDis_fake)
             loss_gen = loss_gen.mean()
 
-            loss_Encod = CEncR * RConLoss + CEncG * loss_gen
+            model_gen.optimizer.zero_grad() 
+            loss_gen.backward()
+            model_gen.optimizer.step()
 
-            loss_Decode = CDecR * RConLoss + CDecG * loss_gen
-
-            model_disc.optimizer.zero_grad()
-
-
-            model_gen.Decoder.Decoptimizer.zero_grad() 
-            loss_Decode.backward()
-            model_gen.Decoder.Decoptimizer.step()
-
-            model_gen.Encoder.Encoptimizer.zero_grad()
-            loss_Encod.backward()
-            model_gen.Encoder.Encoptimizer.step()
-
-            losses_G_Enc.append(loss_Encod.item())
-            losses_G_Dec.append(loss_Decode.item())
-            losses_G.append(loss_Decode.item() + loss_Encod.item())
+            losses_G.append(loss_gen.item())
         
             print("Epoch: [{}/{}], Batch_num: {}, Discriminator loss: {}, Generator loss: {}".format(
                 epoch, num_epochs, batch_ndx, losses_D[-1], losses_G[-1]))
@@ -160,11 +143,6 @@ def main():
 
     
 
-
-CEncR = 1
-CDecR = 1
-CEncG = 1
-CDecG = 1
 
 if __name__ == "__main__":
     main()

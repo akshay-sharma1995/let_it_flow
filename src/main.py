@@ -75,8 +75,12 @@ def main():
             frames2 = frames[:,1:2,:,:]
             # train discriminator
             with torch.no_grad():
-                optical_flow = model_gen(frames)
+                optical_flow, mean, logvar = model_gen(frames)
                 frame2_fake = warp(frames1,optical_flow)
+
+
+            loss_KLD = - 0.5 * torch.sum(1 + logvar - mean*mean - torch.exp(logvar))
+
 
             outDis_real = model_disc(frames1)
 
@@ -108,7 +112,7 @@ def main():
 
             loss_recons = RCLoss(frame2_fake, frames2)
             
-            total_gen_loss = loss_gen + loss_recons
+            total_gen_loss = loss_gen + loss_recons + loss_KLD
 
             model_gen.optimizer.zero_grad() 
             total_gen_loss.backward()

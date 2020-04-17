@@ -13,6 +13,7 @@ def parse_arguments():
     parser.add_argument('--checkpoint', dest='checkpoint_path', type=str, default=None, help='path of a saved_checkpoint')
     parser.add_argument('--train', dest='train', type=int, default=0, help='0 to test the model, 1 to train the model')
     parser.add_argument('--save-interval', dest='save_interval', type=int, default=10, help='epochs after which save the model')
+    parser.add_argument('--save-dir', dest='save_dir', type=str, default="../Model/", help='path to save model')
     return parser.parse_args()
 
 

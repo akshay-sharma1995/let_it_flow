@@ -80,10 +80,6 @@ def main():
                 optical_flow, mean, logvar = model_gen(frames)
                 frame2_fake = warp(frames1,optical_flow)
 
-
-            loss_KLD = - 0.5 * torch.sum(1 + logvar - mean*mean - torch.exp(logvar))
-
-
             outDis_real = model_disc(frames1)
 
             
@@ -104,11 +100,15 @@ def main():
             losses_D.append(loss_dis.item())
 
             # train generator
+            optical_flow, mean, logvar = model_gen(frames)
+            frame2_fake = warp(frames1,optical_flow)
+            
             model_disc.optimizer.zero_grad()
 
             outDis_fake = model_disc(frame2_fake)
             
 
+            loss_KLD = - 0.5 * torch.sum(1 + logvar - mean*mean - torch.exp(logvar))
             loss_gen = -torch.log(outDis_fake)
             loss_gen = loss_gen.mean()
 

@@ -19,6 +19,12 @@ class KITTIDataset(Dataset):
         frame_id = index % self.num_frames 
         seq_id = int(index / self.num_frames)
 
+        if "testing" in self.folder_name:
+            if(seq_id == 26):
+                frame_id = frame_id % 15
+            elif(seq_id == 167):
+                frame_id = frame_id % 14
+    
         if(seq_id < 10):
             frame1_seqname = "00000"
         elif(seq_id < 100):

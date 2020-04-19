@@ -9,6 +9,8 @@ def parse_arguments():
 
     parser.add_argument('--lrd', dest='lr_disc', type=float, default=1e-3, help='learning rate_for_discriminator')
     parser.add_argument('--lrg', dest='lr_gen', type=float, default=1e-3, help='learning rate_for_generator')
+    parser.add_argument('--wt_KL', dest='wt_KL', type=float, default=1, help='Weight for KL loss')
+    parser.add_argument('--wt_recon', dest='wt_recon', type=float, default=1, help='Weight for Recon loss')
     parser.add_argument('--data-dir', dest='data_dir', type=str, default="../data_scene_flow_multiview/training/image_2/", help='path to data directory')
     parser.add_argument('--data-dir-test', dest='data_dir_test', type=str, default="../data_scene_flow_multiview/testing/image_2/", help='path to test data directory')
     parser.add_argument('--num-epochs', dest='num_epochs', type=int, default=100, help='number of epochs')

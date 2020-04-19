@@ -22,6 +22,8 @@ def main():
     num_epochs = args.num_epochs
     data_dir = args.data_dir
     save_interval = args.save_interval
+    wt_recon = args.wt_recon
+    wt_KL = args.wt_KL
 
 
     dataset = KITTIDataset(folder_name=data_dir,
@@ -81,8 +83,6 @@ def main():
                 frame2_fake = warp(frames1,optical_flow)
 
             outDis_real = model_disc(frames1)
-
-            
             lossD_real = torch.log(outDis_real)
 
             outDis_fake = model_disc(frame2_fake)
@@ -106,7 +106,6 @@ def main():
             model_disc.optimizer.zero_grad()
 
             outDis_fake = model_disc(frame2_fake)
-            
 
             loss_KLD = - 0.5 * torch.sum(1 + logvar - mean*mean - torch.exp(logvar))
             loss_gen = -torch.log(outDis_fake)
@@ -114,7 +113,7 @@ def main():
 
             loss_recons = RCLoss(frame2_fake, frames2)
             
-            total_gen_loss = loss_gen + loss_recons + loss_KLD
+            total_gen_loss = loss_gen + wt_recon*loss_recons + wt_KL*loss_KLD
 
             model_gen.optimizer.zero_grad() 
             total_gen_loss.backward()
@@ -124,8 +123,8 @@ def main():
             losses_Rec.append(loss_recons.item())
             fake_probs.extend(outDis_fake.clone().detach().cpu().numpy())
             
-            print("Epoch: [{}/{}], Batch_num: {}, Discriminator loss: {:.4f}, Generator loss: {:.4f}, Recons_Loss: {:.4f}".format(
-                epoch, num_epochs, batch_ndx, losses_D[-1], losses_G[-1], loss_recons))
+            print("Epoch: [{}/{}], Batch_num: {}, Discriminator loss: {:.4f}, Generator loss: {:.4f}, Recons_Loss: {:.4f}, fake_prob: {:.4f}".format(
+                epoch, num_epochs, batch_ndx, losses_D[-1], losses_G[-1], loss_recons, np.mean(fake_probs)))
     
         losses_GG.append(np.mean(losses_G))
         losses_DD.append(np.mean(losses_D))

@@ -10,10 +10,12 @@ def parse_arguments():
     parser.add_argument('--lrd', dest='lr_disc', type=float, default=1e-3, help='learning rate_for_discriminator')
     parser.add_argument('--lrg', dest='lr_gen', type=float, default=1e-3, help='learning rate_for_generator')
     parser.add_argument('--data-dir', dest='data_dir', type=str, default="../data_scene_flow_multiview/training/image_2/", help='path to data directory')
+    parser.add_argument('--data-dir-test', dest='data_dir_test', type=str, default="../data_scene_flow_multiview/testing/image_2/", help='path to test data directory')
     parser.add_argument('--num-epochs', dest='num_epochs', type=int, default=100, help='number of epochs')
     parser.add_argument('--checkpoint', dest='checkpoint_path', type=str, default=None, help='path of a saved_checkpoint')
     parser.add_argument('--train', dest='train', type=int, default=0, help='0 to test the model, 1 to train the model')
     parser.add_argument('--save-interval', dest='save_interval', type=int, default=10, help='epochs after which save the model')
+    parser.add_argument('--loaded-epoch', dest='loaded_epoch', type=int, default=1, help='Loading epoch of trained model')
     return parser.parse_args()
 
 
@@ -28,11 +30,10 @@ def save_model(model, epoch, optimizer, path):
 def load_model(model, optimizer, path):
     checkpoint = torch.load(path)
     model.load_state_dict(checkpoint['model_state_dict'])
-    optimizer.state_dict(checkpoint['optimizer_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
     epoch = checkpoint['epoch']
-    loss = checkpoint['loss']
-    
-    return epoch, loss
+
+    return epoch
 
 
 def make_dirs(path_list):

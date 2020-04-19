@@ -44,7 +44,7 @@ class disc(nn.Module):
                                         nn.ReLU(),
                                         nn.BatchNorm1d(encoded_dim//108),
                                         
-                                        nn.Linear(in_features=encoded_dim//108, out_features=encoded_dim//(8*27*9), bias=True),
+                                        nn.Linear(in_features=encoded_dim//108, out_features=encoded_dim//(16*27*9), bias=True),
                                         )
 
         self.optimizer = torch.optim.Adam(self.parameters(), lr=lr)
@@ -59,5 +59,4 @@ class disc(nn.Module):
         out = self.conv_model(x)
         out = out.reshape(batch_size,-1)
         prob = torch.sigmoid(self.linear(out))
-
         return prob

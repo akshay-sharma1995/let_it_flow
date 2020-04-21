@@ -7,11 +7,13 @@ import torch
 import random
 
 class KITTIDataset(Dataset):
-    def __init__(self, folder_name, transform = None):
+    def __init__(self, folder_name, transform = None, diff_frames = 1):
         self.folder_name = folder_name
         self.transform = transform
         self.num_seq = 200
-        self.num_frames = 20
+        self.diff_frames = diff_frames
+        self.num_frames = 21 - self.diff_frames
+
     def __len__(self):
         return self.num_seq * (self.num_frames)
     
@@ -21,9 +23,9 @@ class KITTIDataset(Dataset):
 
         if "testing" in self.folder_name:
             if(seq_id == 26):
-                frame_id = frame_id % 15
+                frame_id = frame_id % (16 - self.diff_frames)
             elif(seq_id == 167):
-                frame_id = frame_id % 14
+                frame_id = frame_id % (15 - self.diff_frames)
     
         if(seq_id < 10):
             frame1_seqname = "00000"
@@ -40,15 +42,18 @@ class KITTIDataset(Dataset):
         frame1_filename = self.folder_name + frame1_seqname + str(seq_id) + \
                             "_" + frame1_framename + str(frame_id) + ".png"
 
-        if(frame_id + 1 < 10):
+        if(frame_id + self.diff_frames < 10):
             frame2_framename = "0"
         else:
             frame2_framename = ""
 
         frame2_filename = self.folder_name + frame1_seqname + str(seq_id) + \
-                            "_" + frame2_framename + str(frame_id+1) + ".png"
+                            "_" + frame2_framename + str(frame_id+self.diff_frames) + ".png"
 
         
+        print(frame1_filename)
+        print(frame2_filename, "\n")
+
         frame1 = (Image.open(frame1_filename).convert('YCbCr').split()[0])
         frame2 = (Image.open(frame2_filename).convert('YCbCr').split()[0])
         # frame1 = np.array(Image.open(frame1_filename).convert('YCbCr').split()[0])
@@ -147,8 +152,10 @@ def main():
         RandomCrop([320, 896]),
         Normalize(),
         ToTensor()
-    ]
-    ))
+    ]),
+    diff_frames = 2)
+
+    sample = dataset[0]
 
     test_dataset = KITTIDataset(folder_name='../data_scene_flow_multiview/testing/image_2/',
     transform=transforms.Compose([RandomVerticalFlip(), 
@@ -157,13 +164,14 @@ def main():
         Normalize(),
         ToTensor()
     ]
-    ))
+    ),
+    diff_frames = 5)
 
     testloader = DataLoader(test_dataset, batch_size = 20, shuffle = True, num_workers = 4)
 
     dataloader = DataLoader(dataset, batch_size = 20, shuffle = True, num_workers = 4)
 
-    for batch_ndx, sample in enumerate(testloader):
+    for batch_ndx, sample in enumerate(dataloader):
         print(sample.shape)
 if __name__ == "__main__":
     main()

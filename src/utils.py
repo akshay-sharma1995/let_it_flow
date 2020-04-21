@@ -4,13 +4,17 @@ import os,sys
 import torch
 import torch.nn as nn
 from matplotlib import pyplot as plt
+import skimage
+import numpy as np
+import visualization_stuff.OpticalFlow_Visualization.flow_vis.flow_vis as flow_vis
+
 def parse_arguments():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--lrd', dest='lr_disc', type=float, default=1e-3, help='learning rate_for_discriminator')
     parser.add_argument('--lrg', dest='lr_gen', type=float, default=1e-3, help='learning rate_for_generator')
-    parser.add_argument('--wt_KL', dest='wt_KL', type=float, default=1, help='Weight for KL loss')
-    parser.add_argument('--wt_recon', dest='wt_recon', type=float, default=1, help='Weight for Recon loss')
+    parser.add_argument('--wt-KL', dest='wt_KL', type=float, default=1, help='Weight for KL loss')
+    parser.add_argument('--wt-recon', dest='wt_recon', type=float, default=1, help='Weight for Recon loss')
     parser.add_argument('--data-dir', dest='data_dir', type=str, default="../data_scene_flow_multiview/training/image_2/", help='path to data directory')
     parser.add_argument('--data-dir-test', dest='data_dir_test', type=str, default="../data_scene_flow_multiview/testing/image_2/", help='path to test data directory')
     parser.add_argument('--num-epochs', dest='num_epochs', type=int, default=100, help='number of epochs')
@@ -160,6 +164,37 @@ def warp( x, flo):
     
     return output*mask
 
+def save_samples(frames,dir_name, epoch, folder_name ):
+    # pred_frames are numpy ndarray of size (B, 1, H, W)
+    save_dir = os.path.join(dir_name, "{}_{}".format(folder_name,epoch))
+    make_dirs([save_dir])
+    frames = (frames+1)*(255.0/2)
+    frames = frames.astype('uint8')
+    for i in range(frames.shape[0]):
+        fname = os.path.join(save_dir, "{}.png".format(i))
+        skimage.io.imsave(fname,frames[i,0])
+
+
+def save_flow(flow, dir_name, epoch, folder_name):
+    save_dir = os.path.join(dir_name, "{}_{}".format(folder_name,epoch))
+    make_dirs([save_dir])
+    max_u, min_u = flow[:,0].max(), flow[:,0].min()
+    max_v, min_v = flow[:,1].max(), flow[:,1].min()
+    
+    # flow[:,0] = 2*(flow[:,0]-min_u) / (max_u - min_u) - 1.0
+    # flow[:,1] = 2*(flow[:,1]-min_v) / (max_v - min_v) - 1.0
+
+    flow[:,0] = (flow[:,0]+1) / 2*(flow.shape[2]-1)
+    flow[:,1] = (flow[:,1]+1) / 2*(flow.shape[3]-1)
+    # flow = np.moveaxis(flow, [0,1,2,3], [0,2,3,1])
+    flow = np.swapaxes(flow, 1,2)
+    flow = np.swapaxes(flow, 2,3)
+    for i in range(flow.shape[0]):
+        flow_color = flow_vis.flow_to_color(flow[i], convert_to_bgr=False)
+        fname = os.path.join(save_dir, "{}.png".format(i))
+        skimage.io.imsave(fname,flow_color)
+
+    
 def scale_grads(parameters, scale):
     for param in parameters:
         param.grad *= scale

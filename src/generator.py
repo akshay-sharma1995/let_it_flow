@@ -5,7 +5,6 @@ import torch.nn as nn
 import pdb
 import sys
 
-
 class gen(nn.Module):
     def __init__(self, input_channels= 2, latent_dim=108, out_channels=2, lr=1e-3):
         
@@ -104,7 +103,7 @@ class gen(nn.Module):
 
         optical_flow = self.decoder(decoded_latent_code)
 
-        optical_flow = 5 * torch.tanh(optical_flow)
+        # optical_flow = 5 * torch.tanh(optical_flow)
 
         return optical_flow, mean, logvar
 

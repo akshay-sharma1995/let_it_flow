@@ -14,6 +14,57 @@ from DataLoader import *
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
+def train_generator(frames,frames1, frames2, RCLoss, wt_recon, wt_KL, model_disc,  model_gen):
+    
+    # generator forward pass
+    optical_flow, mean, logvar = model_gen(frames)
+    print("optical_flow: min: {}, max: {}".format(optical_flow.min(), optical_flow.max()))
+    frame2_fake = warp(frames1,optical_flow)
+    
+
+    # disc forward pass
+    model_disc.optimizer.zero_grad()
+    outDis_fake = model_disc(frame2_fake)
+
+    # calculate losses
+    loss_KLD = - 0.5 * torch.sum(1 + logvar - mean*mean - torch.exp(logvar))
+    
+    loss_gen = -torch.log(outDis_fake)
+    loss_gen = loss_gen.mean()
+    
+    loss_recons = RCLoss(frame2_fake, frames2)
+    
+    total_gen_loss = loss_gen + wt_recon*loss_recons + wt_KL*loss_KLD
+
+    # update the model
+    model_gen.optimizer.zero_grad() 
+    total_gen_loss.backward()
+    model_gen.optimizer.step()
+    
+    return optical_flow, frame2_fake, loss_gen.item(), loss_recons.item(), outDis_fake
+
+def train_discriminator(frames, frames1, frames2, model_gen, model_disc):
+    with torch.no_grad():
+        optical_flow, mean, logvar = model_gen(frames)
+        frame2_fake = warp(frames1,optical_flow)
+
+    outDis_real = model_disc(frames2)
+    lossD_real = torch.log(outDis_real)
+
+    outDis_fake = model_disc(frame2_fake)
+    
+    # calculate disc losses
+    lossD_fake = torch.log(1.0 - outDis_fake)
+    loss_dis = lossD_real + lossD_fake
+    loss_dis = -0.5*loss_dis.mean()
+
+    # update the model
+    model_disc.optimizer.zero_grad()
+    loss_dis.backward()
+    model_disc.optimizer.step()
+    
+    return loss_dis.item()
+        
 def main():
     args = parse_arguments()
     
@@ -63,65 +114,50 @@ def main():
     mean_fake_probs_arr = []
     std_fake_probs_arr = []
     # train the GAN model
+
+    save_sample_flag = False
     for epoch in range(num_epochs):
         losses_D = []
         losses_G = []
         losses_Rec = []
         fake_probs = []
-
+        if(epoch%2==0):
+            save_sample_flag = True
         for batch_ndx, frames in enumerate(dataloader):
 
             # my data 
-            # frames =  np.random.randint(0, high=1, size=(4,2,320,896))
-            # frames =  torch.tensor(frames).to(DEVICE, dtype=torch.float)
             frames = frames.to(DEVICE).float()
             frames1 = frames[:,0:1,:,:]
             frames2 = frames[:,1:2,:,:]
-            # train discriminator
-            with torch.no_grad():
-                optical_flow, mean, logvar = model_gen(frames)
-                frame2_fake = warp(frames1,optical_flow)
-
-            outDis_real = model_disc(frames1)
-            lossD_real = torch.log(outDis_real)
-
-            outDis_fake = model_disc(frame2_fake)
-
-            lossD_fake = torch.log(1.0 - outDis_fake)
-            loss_dis = lossD_real + lossD_fake
-            loss_dis = -0.5*loss_dis.mean()
-
-            # calculate customized GAN loss for discriminator
             
-            model_disc.optimizer.zero_grad()
-            loss_dis.backward()
-            model_disc.optimizer.step()
+            ## train discriminator
+            #######################################################
+            loss_dis = train_discriminator(frames, frames1, frames2, model_gen, model_disc)
+            losses_D.append(loss_dis)
+          
             
-            losses_D.append(loss_dis.item())
-
-            # train generator
-            optical_flow, mean, logvar = model_gen(frames)
-            frame2_fake = warp(frames1,optical_flow)
-            
-            model_disc.optimizer.zero_grad()
-
-            outDis_fake = model_disc(frame2_fake)
-
-            loss_KLD = - 0.5 * torch.sum(1 + logvar - mean*mean - torch.exp(logvar))
-            loss_gen = -torch.log(outDis_fake)
-            loss_gen = loss_gen.mean()
-
-            loss_recons = RCLoss(frame2_fake, frames2)
-            
-            total_gen_loss = loss_gen + wt_recon*loss_recons + wt_KL*loss_KLD
-
-            model_gen.optimizer.zero_grad() 
-            total_gen_loss.backward()
-            model_gen.optimizer.step()
-
-            losses_G.append(loss_gen.item())
-            losses_Rec.append(loss_recons.item())
+            ## train generator
+            ###############################################################
+            optical_flow, frame2_fake, loss_gen, loss_recons, outDis_fake = train_generator(frames,
+                                                                                            frames1, 
+                                                                                            frames2, 
+                                                                                            RCLoss, 
+                                                                                            wt_recon, 
+                                                                                            wt_KL, 
+                                                                                            model_disc,
+                                                                                            model_gen)
+            losses_G.append(loss_gen)
+            losses_Rec.append(loss_recons)
             fake_probs.extend(outDis_fake.clone().detach().cpu().numpy())
+            
+            # save samples
+            #############################################################
+            if(save_sample_flag):
+                save_samples(frame2_fake.clone().detach().cpu().numpy(), curr_dir, epoch, "predicted")
+                save_samples(frames1.cpu().numpy(), curr_dir, epoch, "actual_frame1")
+                save_samples(frames2.cpu().numpy(), curr_dir, epoch, "actual_frame2")
+                save_flow(optical_flow.clone().detach().cpu().numpy(), curr_dir, epoch, "flow")
+                save_sample_flag = False
             
             print("Epoch: [{}/{}], Batch_num: {}, Discriminator loss: {:.4f}, Generator loss: {:.4f}, Recons_Loss: {:.4f}, fake_prob: {:.4f}".format(
                 epoch, num_epochs, batch_ndx, losses_D[-1], losses_G[-1], loss_recons, np.mean(fake_probs)))

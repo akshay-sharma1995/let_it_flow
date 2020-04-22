@@ -72,6 +72,74 @@ class KITTIDataset(Dataset):
 
         return sample
 
+
+class KITTIStereoDataset(Dataset):
+    def __init__(self, folder_name_1, folder_name_2, transform = None):
+        self.folder_name_1 = folder_name_1
+        self.folder_name_2 = folder_name_2
+        self.transform = transform
+        self.num_seq = 200
+        self.num_frames = 21
+
+    def __len__(self):
+        return self.num_seq * (self.num_frames)
+    
+    def __getitem__(self, index):
+        frame_id = index % self.num_frames 
+        seq_id = int(index / self.num_frames)
+
+        if "testing" in self.folder_name_1:
+            if(seq_id == 26):
+                frame_id = frame_id % 16
+            elif(seq_id == 167):
+                frame_id = frame_id % 15
+    
+        if(seq_id < 10):
+            frame1_seqname = "00000"
+        elif(seq_id < 100):
+            frame1_seqname = "0000"
+        else:
+            frame1_seqname = "000"
+
+        if(frame_id < 10):
+            frame1_framename = "0"
+        else:
+            frame1_framename = ""
+        
+        frame1_filename = self.folder_name_1 + frame1_seqname + str(seq_id) + \
+                            "_" + frame1_framename + str(frame_id) + ".png"
+
+        if(frame_id < 10):
+            frame2_framename = "0"
+        else:
+            frame2_framename = ""
+
+        frame2_filename = self.folder_name_2 + frame1_seqname + str(seq_id) + \
+                            "_" + frame2_framename + str(frame_id) + ".png"
+
+        
+        # print(frame1_filename)
+        # print(frame2_filename, "\n")
+
+        frame1 = (Image.open(frame1_filename).convert('YCbCr').split()[0])
+        frame2 = (Image.open(frame2_filename).convert('YCbCr').split()[0])
+        # frame1 = np.array(Image.open(frame1_filename).convert('YCbCr').split()[0])
+        # frame2 = np.array(Image.open(frame2_filename).convert('YCbCr').split()[0])
+
+        sample = {'frame1':frame1, 'frame2':frame2}
+        
+        # sample = np.stack((frame1, frame2), axis=0)
+        # imgplot = plt.imshow(frame1)
+        # plt.show()
+        # imgplot = plt.imshow(frame2)
+        # plt.show()
+
+        if(self.transform):
+            sample = self.transform(sample)
+
+        return sample
+
+
 class Normalize(object):
     def __init__(self):
         pass
@@ -146,17 +214,31 @@ class RandomHorizontalFlip(object):
 
 
 def main():
+<<<<<<< HEAD
     dataset = KITTIDataset(folder_name='../dataset/data_scene_flow_multiview/training/image_2/',
+=======
+    # dataset = KITTIDataset(folder_name='../data_scene_flow_multiview/training/image_2/',
+    # transform=transforms.Compose([RandomVerticalFlip(), 
+    #     RandomHorizontalFlip(), 
+    #     RandomCrop([320, 896]),
+    #     Normalize(),
+    #     ToTensor()
+    # ]),
+    # diff_frames = 2)
+
+    dataset = KITTIStereoDataset(folder_name_1='../data_scene_flow_multiview/training/image_2/',
+    folder_name_2='../data_scene_flow_multiview/training/image_3/',
+>>>>>>> 683b3c49152f67128314234bbaea3c5a0c9f3a6b
     transform=transforms.Compose([RandomVerticalFlip(), 
         RandomHorizontalFlip(), 
         RandomCrop([320, 896]),
         Normalize(),
         ToTensor()
-    ]),
-    diff_frames = 2)
+    ]))
 
     sample = dataset[0]
 
+<<<<<<< HEAD
     test_dataset = KITTIDataset(folder_name='../dataset/data_scene_flow_multiview/testing/image_2/',
     transform=transforms.Compose([RandomVerticalFlip(), 
         RandomHorizontalFlip(), 
@@ -168,6 +250,19 @@ def main():
     diff_frames = 5)
 
     testloader = DataLoader(test_dataset, batch_size = 20, shuffle = True, num_workers = 4)
+=======
+    # test_dataset = KITTIDataset(folder_name='../data_scene_flow_multiview/testing/image_2/',
+    # transform=transforms.Compose([RandomVerticalFlip(), 
+    #     RandomHorizontalFlip(), 
+    #     RandomCrop([320, 896]),
+    #     Normalize(),
+    #     ToTensor()
+    # ]
+    # ),
+    # diff_frames = 5)
+
+    # testloader = DataLoader(test_dataset, batch_size = 20, shuffle = True, num_workers = 4)
+>>>>>>> 683b3c49152f67128314234bbaea3c5a0c9f3a6b
 
     dataloader = DataLoader(dataset, batch_size = 20, shuffle = True, num_workers = 4)
 

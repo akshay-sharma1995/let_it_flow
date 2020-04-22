@@ -12,7 +12,7 @@ import pdb
 class DataPreProcessor():
     def __init__(self, folder_name):
         self.folder_name = folder_name
-        self.file_names = glob.glob(self.folder_name + "*.mp4")
+        self.file_names = glob.glob(self.folder_name + "*HD_1.mp4")
         # self.file_names = glob.glob(self.folder_name + "*.yuv")
         self.num_files = len(self.file_names)
         print(self.num_files)
@@ -59,10 +59,10 @@ class DataPreProcessor():
             skimage.io.imsave(path, frame)
 
 def main():
-    data_folder = "/home/akshay/Desktop/sem4/24789/project/dataset/MCL-V/vids_partital/"
+    data_folder = "/home/suhail/DL/let_it_flow/data/MCL-V/video_bitstream/"
     # data_folder = "/home/akshay/Desktop/sem4/24789/project/dataset/MCL-V/reference_YUV_sequences/"
     preprocessor = DataPreProcessor(data_folder)
-    for i in range(preprocessor.num_files):
+    for i in range(10):
         start_time = time.time()
         preprocessor.save_png(i)
 

@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 import random
+import glob
 
 class KITTIDataset(Dataset):
     def __init__(self, folder_name, transform = None, diff_frames = 1):
@@ -72,6 +73,48 @@ class KITTIDataset(Dataset):
 
         return sample
 
+
+class MCLVDataset(Dataset):
+    def __init__(self, folder_name, transform = None, diff_frames = 1):
+        self.folder_name = folder_name
+        self.transform = transform
+        self.num_seq = 10
+        self.diff_frames = diff_frames
+        self.num_frames = 149 - self.diff_frames
+
+        self.video_folders = glob.glob(folder_name +"*/")
+
+        print(self.video_folders)
+    def __len__(self):
+        return self.num_seq * (self.num_frames)
+    
+    def __getitem__(self, index):
+        frame_id = index % self.num_frames 
+        seq_id = int(index / self.num_frames)
+
+        
+        frame1_filename = self.video_folders[seq_id] + str(frame_id) + ".png"
+        frame2_filename = self.video_folders[seq_id] + str(frame_id + self.diff_frames) + ".png"
+
+        # print(frame1_filename)
+        # print(frame2_filename, "\n")
+
+
+        frame1 = (Image.open(frame1_filename).convert('YCbCr').split()[0])
+        frame2 = (Image.open(frame2_filename).convert('YCbCr').split()[0])
+
+        sample = {'frame1':frame1, 'frame2':frame2}
+        
+        # sample = np.stack((frame1, frame2), axis=0)
+        # imgplot = plt.imshow(frame1)
+        # plt.show()
+        # imgplot = plt.imshow(frame2)
+        # plt.show()
+
+        if(self.transform):
+            sample = self.transform(sample)
+
+        return sample
 
 class KITTIStereoDataset(Dataset):
     def __init__(self, folder_name_1, folder_name_2, transform = None):
@@ -214,9 +257,6 @@ class RandomHorizontalFlip(object):
 
 
 def main():
-<<<<<<< HEAD
-    dataset = KITTIDataset(folder_name='../dataset/data_scene_flow_multiview/training/image_2/',
-=======
     # dataset = KITTIDataset(folder_name='../data_scene_flow_multiview/training/image_2/',
     # transform=transforms.Compose([RandomVerticalFlip(), 
     #     RandomHorizontalFlip(), 
@@ -226,43 +266,23 @@ def main():
     # ]),
     # diff_frames = 2)
 
-    dataset = KITTIStereoDataset(folder_name_1='../data_scene_flow_multiview/training/image_2/',
-    folder_name_2='../data_scene_flow_multiview/training/image_3/',
->>>>>>> 683b3c49152f67128314234bbaea3c5a0c9f3a6b
-    transform=transforms.Compose([RandomVerticalFlip(), 
-        RandomHorizontalFlip(), 
-        RandomCrop([320, 896]),
-        Normalize(),
-        ToTensor()
-    ]))
-
-    sample = dataset[0]
-
-<<<<<<< HEAD
-    test_dataset = KITTIDataset(folder_name='../dataset/data_scene_flow_multiview/testing/image_2/',
-    transform=transforms.Compose([RandomVerticalFlip(), 
-        RandomHorizontalFlip(), 
-        RandomCrop([320, 896]),
-        Normalize(),
-        ToTensor()
-    ]
-    ),
-    diff_frames = 5)
-
-    testloader = DataLoader(test_dataset, batch_size = 20, shuffle = True, num_workers = 4)
-=======
-    # test_dataset = KITTIDataset(folder_name='../data_scene_flow_multiview/testing/image_2/',
+    # dataset = KITTIStereoDataset(folder_name_1='../data_scene_flow_multiview/training/image_2/',
+    # folder_name_2='../data_scene_flow_multiview/training/image_3/',
     # transform=transforms.Compose([RandomVerticalFlip(), 
     #     RandomHorizontalFlip(), 
     #     RandomCrop([320, 896]),
     #     Normalize(),
     #     ToTensor()
-    # ]
-    # ),
-    # diff_frames = 5)
+    # ]))
+    dataset = MCLVDataset(folder_name="/home/suhail/DL/let_it_flow/data/MCL-V/video_bitstream/",
+    transform=transforms.Compose([RandomVerticalFlip(), 
+        RandomHorizontalFlip(), 
+        RandomCrop([320, 896]),
+        Normalize(),
+        ToTensor()
+    ]), diff_frames=2)
 
-    # testloader = DataLoader(test_dataset, batch_size = 20, shuffle = True, num_workers = 4)
->>>>>>> 683b3c49152f67128314234bbaea3c5a0c9f3a6b
+    sample = dataset[0]
 
     dataloader = DataLoader(dataset, batch_size = 20, shuffle = True, num_workers = 4)
 

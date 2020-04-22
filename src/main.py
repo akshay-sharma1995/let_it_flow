@@ -86,7 +86,7 @@ def main():
     ]
     ))
 
-    dataloader = DataLoader(dataset, batch_size = 64, shuffle = True, num_workers = 4)
+    dataloader = DataLoader(dataset, batch_size = 32, shuffle = True, num_workers = 4)
 
     # create required directories
     results_dir = os.path.join(os.getcwd(), "results")

@@ -51,8 +51,8 @@ class KITTIDataset(Dataset):
                             "_" + frame2_framename + str(frame_id+self.diff_frames) + ".png"
 
         
-        print(frame1_filename)
-        print(frame2_filename, "\n")
+        # print(frame1_filename)
+        # print(frame2_filename, "\n")
 
         frame1 = (Image.open(frame1_filename).convert('YCbCr').split()[0])
         frame2 = (Image.open(frame2_filename).convert('YCbCr').split()[0])
@@ -146,7 +146,7 @@ class RandomHorizontalFlip(object):
 
 
 def main():
-    dataset = KITTIDataset(folder_name='../data_scene_flow_multiview/training/image_2/',
+    dataset = KITTIDataset(folder_name='../dataset/data_scene_flow_multiview/training/image_2/',
     transform=transforms.Compose([RandomVerticalFlip(), 
         RandomHorizontalFlip(), 
         RandomCrop([320, 896]),
@@ -157,7 +157,7 @@ def main():
 
     sample = dataset[0]
 
-    test_dataset = KITTIDataset(folder_name='../data_scene_flow_multiview/testing/image_2/',
+    test_dataset = KITTIDataset(folder_name='../dataset/data_scene_flow_multiview/testing/image_2/',
     transform=transforms.Compose([RandomVerticalFlip(), 
         RandomHorizontalFlip(), 
         RandomCrop([320, 896]),

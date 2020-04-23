@@ -106,7 +106,7 @@ def main():
             frames1 = frames[:,0:1,:,:]
             frames2 = frames[:,1:2,:,:]
             
-            
+             
             ## train generator
             ###############################################################
             optical_flow,  frames2_fake, loss_gen = train_generator(frames,

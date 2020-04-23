@@ -49,7 +49,7 @@ def main():
     save_interval = args.save_interval
     wt_recon = args.wt_recon
     wt_KL = args.wt_KL
-
+    res_dir = args.results_dir
 
     # dataset = KITTIDataset(folder_name=data_dir,
     # transform=transforms.Compose([RandomVerticalFlip(),
@@ -74,7 +74,10 @@ def main():
     dataloader = DataLoader(dataset, batch_size = 32, shuffle = True, num_workers = 4)
 
     # create required directories
-    results_dir = os.path.join(os.getcwd(), "results_autoencoder")
+    if (res_dir):
+        results_dir = os.path.join(res_dir, "results_autoencoder")
+    else:
+        results_dir = os.path.join(os.getcwd(), "results_autoencoder")
     # models_dir = os.path.join(os.getcwd(), "saved_models")
     
     timestamp =  datetime.now().strftime("%Y-%m-%d_%I-%M-%S_%p")

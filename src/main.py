@@ -80,25 +80,25 @@ def main():
     wt_KL = args.wt_KL
 
 
-    # dataset = KITTIDataset(folder_name=data_dir,
-    # transform=transforms.Compose([RandomVerticalFlip(),
-        # RandomHorizontalFlip(),
-        # RandomCrop([320, 896]),
-        # Normalize(),
-        # ToTensor()
-    # ]
-    # ))
-    
-    dataset = MCLVDataset(folder_name=data_dir,
+    dataset = KITTIDataset(folder_name=data_dir,
     transform=transforms.Compose([RandomVerticalFlip(),
         RandomHorizontalFlip(),
         RandomCrop([320, 896]),
         Normalize(),
         ToTensor()
     ]
-    ),
-    diff_frames=2
-    )
+    ))
+    
+    # dataset = MCLVDataset(folder_name=data_dir,
+    # transform=transforms.Compose([RandomVerticalFlip(),
+    #     RandomHorizontalFlip(),
+    #     RandomCrop([320, 896]),
+    #     Normalize(),
+    #     ToTensor()
+    # ]
+    # ),
+    # diff_frames=2
+    # )
 
     dataloader = DataLoader(dataset, batch_size = 32, shuffle = True, num_workers = 4)
 
@@ -171,7 +171,7 @@ def main():
                 save_samples(frame2_fake.clone().detach().cpu().numpy(), curr_dir, epoch, "predicted")
                 save_samples(frames1.cpu().numpy(), curr_dir, epoch, "actual_frame1")
                 save_samples(frames2.cpu().numpy(), curr_dir, epoch, "actual_frame2")
-                save_flow(optical_flow.clone().detach().cpu().numpy(), curr_dir, epoch, "flow")
+                save_flow_cv2(optical_flow.clone().detach().cpu().numpy(), curr_dir, epoch, "flow")
                 save_sample_flag = False
             
             print("Epoch: [{}/{}], Batch_num: {}, Discriminator loss: {:.4f}, Generator loss: {:.4f}, Recons_Loss: {:.4f}, fake_prob: {:.4f}".format(

@@ -7,6 +7,7 @@ from matplotlib import pyplot as plt
 import skimage
 import numpy as np
 import visualization_stuff.OpticalFlow_Visualization.flow_vis.flow_vis as flow_vis
+import cv2
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
@@ -219,9 +220,80 @@ def plot_props(data_arr, prop_names, save_path):
     for data, prop_name in zip(data_arr,prop_names):
         plot_prop(data, prop_name, save_path)
 
+def normalize_mag(mag, alpha=0, beta=255):
+    mag_max = np.amax(mag, axis=(1,2,3), keepdims=True)
+    mag_min = np.amin(mag, axis=(1,2,3), keepdims=True)
+
+    mag = (beta-alpha)*(mag-mag_min)/(mag_max-mag_min) + alpha
+
+    return mag
+
+def save_flow_cv2(flow, dir_name, epoch, folder_name):
+    save_dir = os.path.join(dir_name, "{}_{}".format(folder_name,epoch))
+    make_dirs([save_dir]) 
+    hsv = np.zeros((flow.shape[0],3, flow.shape[2], flow.shape[3]), dtype=np.uint8)
+    hsv[:,1,:,:] = 255
+
+    mag = np.sum(flow**2, 1, keepdims=True)**0.5
+    ang = np.zeros_like(mag)
+    ang = np.arctan2(flow[:,1:2,:,:], flow[:,0:1,:,:])
+    hsv[:,0:1,:,:] = ang*180 / (2*np.pi)
+    hsv[:,2:3,:,:] = normalize_mag(mag, 0, 255)
+
+    hsv = np.swapaxes(hsv, 1,2)
+    hsv = np.swapaxes(hsv, 2,3)
+
+    for i in range(flow.shape[0]):
+        bgr = cv2.cvtColor(hsv[i], cv2.COLOR_HSV2BGR)
+        fname = os.path.join(save_dir, "{}.png".format(i))
+        skimage.io.imsave(fname,bgr)
+
+##################################################################
+# unflow utis
+
+def conv(batchNorm, in_planes, out_planes, kernel_size=3, stride=1):
+    if batchNorm:
+        return nn.Sequential(
+                nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride, padding=(kernel_size-1)//2, bias=False),
+                nn.BatchNorm2d(out_planes),
+                nn.LeakyReLU(0.1,inplace=True)
+                )
+    else:
+        return nn.Sequential(
+                nn.Conv2d(in_planes, out_planes, kernel_size=kernel_size, stride=stride, padding=(kernel_size-1)//2, bias=True),
+                nn.LeakyReLU(0.1,inplace=True)
+                )
 
 
+def predict_flow(in_planes):
+    return nn.Conv2d(in_planes,2,kernel_size=3,stride=1,padding=1,bias=False)
 
 
+def deconv(in_planes, out_planes):
+    return nn.Sequential(
+            nn.ConvTranspose2d(in_planes, out_planes, kernel_size=4, stride=2, padding=1, bias=False),
+            nn.LeakyReLU(0.1,inplace=True)
+            )
 
 
+def correlate(input1, input2):
+    out_corr = spatial_correlation_sample(input1,
+                                        input2,
+                                        kernel_size=1,
+                                        patch_size=21,
+                                        stride=1,
+                                        padding=0,
+                                        dilation_patch=2)
+    # collate dimensions 1 and 2 in order to be treated as a
+    # regular 4D tensor
+    b, ph, pw, h, w = out_corr.size()
+    out_corr = out_corr.view(b, ph * pw, h, w)/input1.size(1)
+    return F.leaky_relu_(out_corr, 0.1)
+
+
+def crop_like(input, target):
+    if input.size()[2:] == target.size()[2:]:
+        return input
+    else:
+        return input[:, :, :target.size(2), :target.size(3)]
+############################################

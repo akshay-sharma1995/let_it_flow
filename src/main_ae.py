@@ -19,18 +19,25 @@ def train_generator(frames,frames1, frames2, model_gen):
     
     # generator forward pass
     optical_flow = model_gen(frames)
-    print("optical_flow: min: {}, max: {}".format(optical_flow.min(), optical_flow.max()))
-    # frame2_fake = warp(frames1,optical_flow)
-    frames2_fake = image_warp(frames1, optical_flow)
+    h,w = frames.shape[-2:]
+    
+    optical_flow = [F.interpolate(oflow, (h,w)) for oflow in optical_flow]
+    
+    weights = [0.32, 0.08, 0.02, 0.01, 0.005]
+    
+    loss = 0.0
+    for i in range(0, len(optical_flow)):
+        oflow = optical_flow[i]
+        frames2_fake = image_warp(frames1,out_flow)
+        
+        loss += flow_loss(frames1, frames2, frames2_fake, oflow, weights[i])
+        
 
-    total_gen_loss = flow_loss(frames1, frames2, frames2_fake, optical_flow)
-
-    # update the model
     model_gen.optimizer.zero_grad() 
-    total_gen_loss.backward()
+    loss.backward()
     model_gen.optimizer.step()
     
-    return optical_flow, frames2_fake, total_gen_loss.item()
+    return optical_flow, frames2_fake, loss.item()
         
 def main():
     args = parse_arguments()
@@ -79,7 +86,7 @@ def main():
     
 
     ## create generator and discriminator instances
-    model_gen = auto_enc().to(DEVICE)
+    model_gen = FlownetC().to(DEVICE)
     
     losses_GG = []
     # train the GAN model

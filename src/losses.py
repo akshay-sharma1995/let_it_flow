@@ -19,15 +19,15 @@ class SsimLoss():
     def ReturnLoss(self, frame1, frame2):
         return -self.criterion(frame1, frame2)
         
-def flow_loss(frames1, frames2, frames2_pred, flow):
+def flow_loss(frames1, frames2, frames2_pred, flow, weight=1.0):
     spatial_loss = spatial_smoothing_loss()
     s_loss = spatial_loss(flow)
     recons_loss = torch.nn.MSELoss()
 
-    loss = 0
-    loss = recons_loss(frames2_pred, frames2)
+    loss = weight*recons_loss(frames2_pred, frames2)
 
     loss = (0.001)*loss + s_loss
+    
     return loss
 
 

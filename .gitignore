@@ -1,3 +1,4 @@
 dataset/
 src/results/
+src/results*
 *.pyc

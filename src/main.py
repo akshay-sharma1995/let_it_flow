@@ -20,11 +20,12 @@ def train_generator(frames,frames1, frames2, RCLoss, wt_recon, wt_KL, model_disc
     optical_flow, mean, logvar = model_gen(frames)
     print("optical_flow: min: {}, max: {}".format(optical_flow.min(), optical_flow.max()))
     frame2_fake = warp(frames1,optical_flow)
+    # frame2_fake = image_warp(frames1, optical_flow)
     
 
     # disc forward pass
     model_disc.optimizer.zero_grad()
-    outDis_fake = model_disc(frame2_fake)
+    outDis_fake = model_disc(frame2_fake - frames2)
 
     # calculate losses
     loss_KLD = - 0.5 * torch.sum(1 + logvar - mean*mean - torch.exp(logvar))
@@ -47,11 +48,13 @@ def train_discriminator(frames, frames1, frames2, model_gen, model_disc):
     with torch.no_grad():
         optical_flow, mean, logvar = model_gen(frames)
         frame2_fake = warp(frames1,optical_flow)
+        # frame2_fake = image_warp(frames1, optical_flow)
 
-    outDis_real = model_disc(frames2)
+    disc_real_input = torch.zeros_like(frames2).to(DEVICE)
+    outDis_real = model_disc(disc_real_input)
     lossD_real = torch.log(outDis_real)
 
-    outDis_fake = model_disc(frame2_fake)
+    outDis_fake = model_disc(frame2_fake - frames2)
     
     # calculate disc losses
     lossD_fake = torch.log(1.0 - outDis_fake)
@@ -77,14 +80,25 @@ def main():
     wt_KL = args.wt_KL
 
 
-    dataset = KITTIDataset(folder_name=data_dir,
+    # dataset = KITTIDataset(folder_name=data_dir,
+    # transform=transforms.Compose([RandomVerticalFlip(),
+        # RandomHorizontalFlip(),
+        # RandomCrop([320, 896]),
+        # Normalize(),
+        # ToTensor()
+    # ]
+    # ))
+    
+    dataset = MCLVDataset(folder_name=data_dir,
     transform=transforms.Compose([RandomVerticalFlip(),
         RandomHorizontalFlip(),
         RandomCrop([320, 896]),
         Normalize(),
         ToTensor()
     ]
-    ))
+    ),
+    diff_frames=2
+    )
 
     dataloader = DataLoader(dataset, batch_size = 32, shuffle = True, num_workers = 4)
 
@@ -105,7 +119,8 @@ def main():
     model_gen = gen().to(DEVICE)
     model_disc = disc().to(DEVICE)
     
-    RCLoss = nn.L1Loss()
+    # RCLoss = nn.L1Loss()
+    RCLoss = nn.MSELoss()
     # criterion = nn.BCELoss()
 
     losses_GG = []
@@ -149,7 +164,7 @@ def main():
             losses_G.append(loss_gen)
             losses_Rec.append(loss_recons)
             fake_probs.extend(outDis_fake.clone().detach().cpu().numpy())
-            
+             
             # save samples
             #############################################################
             if(save_sample_flag):

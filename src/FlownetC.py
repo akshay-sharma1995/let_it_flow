@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.nn.init import kaiming_normal_, constant_
 from utils import conv, predict_flow, deconv, crop_like, correlate
 import skimage.io
@@ -7,7 +8,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 class FlowNetC(nn.Module):
-    def __init__(self,batchNorm=True):
+    def __init__(self,batchNorm=True, lr=1e-3):
         super(FlowNetC,self).__init__()
 
         self.batchNorm = batchNorm
@@ -48,11 +49,12 @@ class FlowNetC(nn.Module):
             elif isinstance(m, nn.BatchNorm2d):
                 constant_(m.weight, 1)
                 constant_(m.bias, 0)
-
+        
+        self.optimizer = torch.optim.Adam(self.parameters(), lr=lr)
     def forward(self, x):# X.SHAPE = Bx2xcxhxw
         
-        x1 = x[:,0]
-        x2 = x[:,0]
+        x1 = x[:,0:1]
+        x2 = x[:,1:2]
 
         out_conv1a = self.conv1(x1)
         

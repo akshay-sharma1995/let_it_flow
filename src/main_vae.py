@@ -15,11 +15,11 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 
-def vae(frames,frames1, frames2, RCLoss, wt_recon, wt_KL, model_gen):
+def train_gen(frames,frames1, frames2, RCLoss, wt_recon, wt_KL, model_gen):
 
     optical_flow, mean, logvar = model_gen(frames)
     print("optical_flow: min: {}, max: {}".format(optical_flow.min(), optical_flow.max()))
-    frame2_fake = warp(frames1,optical_flow)
+    frame2_fake = image_warp(frames1,optical_flow)
     
     # calculate losses
     loss_KLD = - 0.5 * torch.sum(1 + logvar - mean*mean - torch.exp(logvar))
@@ -45,7 +45,7 @@ def main():
     save_interval = args.save_interval
     wt_recon = args.wt_recon
     wt_KL = args.wt_KL
-
+    res_dir = args.results_dir
 
     dataset = KITTIDataset(folder_name=data_dir,
     transform=transforms.Compose([RandomVerticalFlip(),
@@ -59,7 +59,10 @@ def main():
     dataloader = DataLoader(dataset, batch_size = 64, shuffle = True, num_workers = 4)
 
     # create required directories
-    results_dir = os.path.join(os.getcwd(), "results")
+    if(res_dir):
+        results_dir = os.path.join(res_dir, "results_flownet")
+    else:
+        results_dir = os.path.join(os.getcwd(), "results_flownet")
     # models_dir = os.path.join(os.getcwd(), "saved_models")
     
     timestamp =  datetime.now().strftime("%Y-%m-%d_%I-%M-%S_%p")
@@ -103,13 +106,13 @@ def main():
 
             # train generator
             #########################################
-            optical_flow, frame2_fake, total_gen_loss, loss_recons = train_vae(frames, 
-                                                                                        frames1, 
-                                                                                        frames2,  
-                                                                                        RCLoss,
-                                                                                        wt_recon,
-                                                                                        wt_KL, 
-                                                                                        model_gen)
+            optical_flow, frame2_fake, total_gen_loss, loss_recons = train_gen(frames, 
+                                                                                frames1, 
+                                                                                frames2,  
+                                                                                RCLoss,
+                                                                                wt_recon,
+                                                                                wt_KL, 
+                                                                                model_gen)
             losses_G.append(total_gen_loss*1.0)
             losses_Rec.append(loss_recons*1.0)
 

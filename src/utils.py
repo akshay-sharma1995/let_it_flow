@@ -3,11 +3,20 @@ import pdb
 import os,sys
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from matplotlib import pyplot as plt
 import skimage
 import numpy as np
 import visualization_stuff.OpticalFlow_Visualization.flow_vis.flow_vis as flow_vis
 import cv2
+try:
+    from spatial_correlation_sampler import spatial_correlation_sample
+except ImportError as e:
+    import warnings
+    with warnings.catch_warnings():
+        warnings.filterwarnings("default", category=ImportWarning)
+        warnings.warn("failed to load custom correlation module"
+                      "which is needed for FlowNetC", ImportWarning)
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
@@ -18,7 +27,7 @@ def parse_arguments():
     parser.add_argument('--wt-recon', dest='wt_recon', type=float, default=1, help='Weight for Recon loss')
     parser.add_argument('--data-dir', dest='data_dir', type=str, default="../data_scene_flow_multiview/training/image_2/", help='path to data directory')
     parser.add_argument('--data-dir-test', dest='data_dir_test', type=str, default="../data_scene_flow_multiview/testing/image_2/", help='path to test data directory')
-    parser.add_argument('--resutls-dir', dest='results_dir', type=str, default="None", help='path to results dir')
+    parser.add_argument('--results-dir', dest='results_dir', type=str, default="None", help='path to results dir')
     parser.add_argument('--num-epochs', dest='num_epochs', type=int, default=100, help='number of epochs')
     parser.add_argument('--checkpoint', dest='checkpoint_path', type=str, default=None, help='path of a saved_checkpoint')
     parser.add_argument('--train', dest='train', type=int, default=0, help='0 to test the model, 1 to train the model')

@@ -1,116 +1,147 @@
+import os, sys
+import pdb
+import argparse
 import torch
-import os
-import torch.nn.functional as F
-import torch.nn.parallel
-import torch.backends.cudnn as cudnn
-import torch.optim
-import torch.utils.data
-import torchvision.transforms as transforms
-import flow_transforms
-import skimage.io
-import skimage.color    
-# import models
-# import datasets
-# from multiscaleloss import multiscaleEPE, realEPE
-# import datetime
-# from tensorboardX import SummaryWriter
-import numpy as np
-import random
-from matplotlib import pyplot as plt
+from losses import *
+from generator import *
+from discriminator import *
 from FlownetC import *
-import torch.optim as optim
-import torch
-from train import *
-from util import rgb_to_y
-
-def imlist(fpath):
-    flist = os.listdir(fpath)
-    return flist
-
-def plot_loss(epoch_loss_list,num_epochs):
-    epochs = np.arange(1,num_epochs+1)
-    plt.plot(epochs,epoch_loss_list,'k-')
-    plt.xlabel("Epochs")
-    plt.ylabel("Loss")
-    plt.show()
+import pdb
+from utils import *
+from torch.utils.data import dataloader
+from torchvision.transforms import transforms
+from datetime import datetime
+from DataLoader import *
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
+def train_generator(frames,frames1, frames2, model_gen):
+    
+    # generator forward pass
+    optical_flow = model_gen(frames)
+    h,w = frames.shape[-2:]
+    
+    optical_flow = [F.interpolate(oflow, (h,w)) for oflow in optical_flow]
+    
+    weights = [0.32, 0.08, 0.02, 0.01, 0.005]
+    
+    loss = 0.0
+    for i in range(0, len(optical_flow)):
+        oflow = optical_flow[i]
+        frames2_fake = image_warp(frames1,oflow)
+         
+        loss += flow_loss(frames1, frames2, frames2_fake, oflow, weights[i])
+    
+    model_gen.optimizer.zero_grad() 
+    loss.backward()
+    model_gen.optimizer.step()
+    print("optical_flow: min: {}, max: {}".format(optical_flow[-1].min(), optical_flow[-1].max()))
+    return optical_flow[-1], frames2_fake, loss.item()
+        
 def main():
-    model = FlowNetC()
-    # s_loss = 
-    if torch.cuda.is_available():
-        model.cuda()
-        print("Model shifted to GPU")
+    args = parse_arguments()
+    
+    lr_disc = args.lr_disc
+    lr_gen = args.lr_gen
+    num_epochs = args.num_epochs
+    data_dir = args.data_dir
+    save_interval = args.save_interval
+    wt_recon = args.wt_recon
+    wt_KL = args.wt_KL
+    res_dir = args.results_dir
 
-    optimizer = optim.Adam(model.parameters(),lr=1e-4)
-    DIR = "../../../Project_data/training_data/npz_3_set/"
-    checkpoints_dir = "./checkpoints/"
-    # input_transform = transforms.Compose([
-    #     flow_transforms.ArrayToTensor(),
-    #     transforms.Normalize(mean=[0,0,0], std=[255,255,255]),
-    #     transforms.Normalize(mean=[0.411,0.432,0.45], std=[1,1,1])
-    # ])
-    # target_transform = transforms.Compose([
-    #     flow_transforms.ArrayToTensor(),
-    #     transforms.Normalize(mean=[0,0],std=[20,20])
-    # ])
-    batch_size = 1
-    # length =
-    flist = imlist(DIR)
-    # print("flist",flist)
-    number_of_image_sets = len(flist)
-    idxs = (np.arange(1,number_of_image_sets,1)) ## id of all image_sets
-    random.shuffle(idxs) ## shuffling the idxs
-    num_epochs = 10
-    batches_processed = 0
-    epoch_loss_list = []
-    for epoch in range(0,num_epochs):
+    dataset = KITTIDataset(folder_name=data_dir,
+    transform=transforms.Compose([RandomVerticalFlip(),
+        RandomHorizontalFlip(),
+        RandomCrop([320, 896]),
+        Normalize(),
+        ToTensor()
+    ]
+    ))
+    
+    # dataset = MCLVDataset(folder_name=data_dir,
+    # transform=transforms.Compose([RandomVerticalFlip(),
+        # RandomHorizontalFlip(),
+        # RandomCrop([320, 896]),
+        # Normalize(),
+        # ToTensor()
+    # ]
+    # ),
+    # diff_frames=2
+    # )
 
-        epoch_loss = 0
-        for i in range(len(idxs)):
-            image_batch = []
-            if(len(idxs)-i>=batch_size):
-                count = batch_size
-            else:
-                count = len(idxs) - i
-            for j in range(count): ## making batches
-                path = DIR + flist[idxs[i]]
-                image_triplet = np.load(path)['arr_0']
-                image_triplet[0] = skimage.color.rgb2ycbcr(image_triplet[0])
-                image_triplet[1] = skimage.color.rgb2ycbcr(image_triplet[1])
-                image_triplet[2] = skimage.color.rgb2ycbcr(image_triplet[2])
+    dataloader = DataLoader(dataset, batch_size = 10, shuffle = True, num_workers = 4)
 
-                image_triplet = image_triplet[:,:,:,0:1] ## only y channel of each image
+    # create required directories
+    if (res_dir):
+        results_dir = os.path.join(res_dir, "results_flownet")
+    else:
+        results_dir = os.path.join(os.getcwd(), "results_flownet")
+    # models_dir = os.path.join(os.getcwd(), "saved_models")
+    
+    timestamp =  datetime.now().strftime("%Y-%m-%d_%I-%M-%S_%p")
+    curr_dir = os.path.join(results_dir, timestamp)
+    
+    gen_save_path = os.path.join(curr_dir, "gen_lrg_{}".format(lr_gen))
 
-                ## image_triplet.size = 3xHxWx3
-                ## mapping the images to (-1,1)
-                image_triplet = ((image_triplet.astype(np.float64) - 16.0) / (235.0-16.0))   * 2.0 - 1.0
-                # print("max_min", np.nanmax(image_triplet),np.nanmin(image_triplet))
-                image_batch.append(image_triplet)
+    make_dirs([results_dir, curr_dir])
+    
 
-            image_batch = np.array(image_batch)
-            image_batch = np.rollaxis(image_batch,4,2)
+    ## create generator and discriminator instances
+    model_gen = FlowNetC(lr=lr_gen).to(DEVICE)
+    
+    losses_GG = []
+    # train the GAN model
 
-            # print("listofimages.shape",np.shape(image_batch))
-            batches_processed += 1
-            batch_loss = train(image_batch,model,optimizer)
-            epoch_loss += batch_loss
-            if((batches_processed%200)==0):
-                print("Epoch = ",epoch+1," Loss_after_",batches_processed,"_batches = ",epoch_loss)
-        print("Epoch = ",epoch+1,"/ ",num_epochs,"  Loss = ",epoch_loss)
-        epoch_loss_list.append(epoch_loss)
+    save_sample_flag = False
+    for epoch in range(num_epochs):
+        losses_D = []
+        losses_G = []
+        losses_Rec = []
+        fake_probs = []
+        if(epoch%10==0):
+            save_sample_flag = True
+        for batch_ndx, frames in enumerate(dataloader):
 
-            ## saving model_weights
-        # if((epoch + 1)%1):
-        checkpoint_file_name = checkpoints_dir + "t_loss_model"+str(epoch+1)+".pth"
-        torch.save({
-        'epoch': epoch+1,
-        'model_state_dict': model.state_dict(),
-        # 'optimizer_state_dict': optimizer.state_dict(),
-        'loss': epoch_loss}, checkpoint_file_name)
-        print("checkpoint_saved")
+            # my data 
+            frames = frames.to(DEVICE).float()
+            frames1 = frames[:,0:1,:,:]
+            frames2 = frames[:,1:2,:,:]
             
+             
+            ## train generator
+            ###############################################################
+            optical_flow,  frames2_fake, loss_gen = train_generator(frames,
+                                                                    frames1, 
+                                                                    frames2, 
+                                                                    model_gen)
 
-    plot_loss(epoch_loss_list,num_epochs)
-if __name__ == '__main__':
+            losses_G.append(loss_gen)
+             
+            # save samples
+            #############################################################
+            if(save_sample_flag):
+                save_samples(frames2_fake.clone().detach().cpu().numpy(), curr_dir, epoch, "predicted")
+                save_samples(frames1.cpu().numpy(), curr_dir, epoch, "actual_frame1")
+                save_samples(frames2.cpu().numpy(), curr_dir, epoch, "actual_frame2")
+                save_flow(optical_flow.clone().detach().cpu().numpy(), curr_dir, epoch, "flow")
+                save_sample_flag = False
+            
+            print("Epoch: [{}/{}], Batch_num: {}, loss: {:.4f},".format(epoch, num_epochs, batch_ndx, losses_G[-1]))
+            
+    
+        losses_GG.append(np.mean(losses_G))
+
+        print("Epoch: [{}/{}], Loss: {:.4f}".format(epoch+1, num_epochs, losses_GG[-1]))
+        
+        if (epoch+1) % save_interval == 0:
+            save_model(model_gen, epoch, model_gen.optimizer, gen_save_path+"epoch_{}.pth".format(epoch))
+
+    plot_props([losses_GG],
+                ["flow_loss"],
+                curr_dir)
+
+
+if __name__ == "__main__":
     main()
+

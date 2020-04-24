@@ -57,7 +57,9 @@ def main():
         Normalize(),
         ToTensor()
     ]
-    ))
+    ),
+    diff_frames=3
+    )
     
     # dataset = MCLVDataset(folder_name=data_dir,
     # transform=transforms.Compose([RandomVerticalFlip(),
@@ -70,7 +72,7 @@ def main():
     # diff_frames=2
     # )
 
-    dataloader = DataLoader(dataset, batch_size = 10, shuffle = True, num_workers = 4)
+    dataloader = DataLoader(dataset, batch_size = 15, shuffle = True, num_workers = 4)
 
     # create required directories
     if (res_dir):

@@ -6,7 +6,7 @@ from utils import conv, predict_flow, deconv, crop_like, correlate
 import skimage.io
 from matplotlib import pyplot as plt
 import numpy as np
-
+import pdb
 class FlowNetC(nn.Module):
     def __init__(self,batchNorm=True, lr=1e-3):
         super(FlowNetC,self).__init__()
@@ -43,7 +43,8 @@ class FlowNetC(nn.Module):
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d) or isinstance(m, nn.ConvTranspose2d):
-                kaiming_normal_(m.weight, 0.1)
+                # kaiming_normal_(m.weight, 0.1)
+                torch.nn.init.xavier_normal_(m.weight, gain=10.0)
                 if m.bias is not None:
                     constant_(m.bias, 0)
             elif isinstance(m, nn.BatchNorm2d):
@@ -55,7 +56,8 @@ class FlowNetC(nn.Module):
         
         x1 = x[:,0:1]
         x2 = x[:,1:2]
-
+        
+        # pdb.set_trace()
         out_conv1a = self.conv1(x1)
         
         out_conv2a = self.conv2(out_conv1a)

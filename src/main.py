@@ -78,6 +78,7 @@ def main():
     save_interval = args.save_interval
     wt_recon = args.wt_recon
     wt_KL = args.wt_KL
+    res_dir = args.results_dir
 
 
     dataset = KITTIDataset(folder_name=data_dir,
@@ -87,7 +88,7 @@ def main():
         Normalize(),
         ToTensor()
     ]
-    ))
+    ), diff_frames=3)
     
     # dataset = MCLVDataset(folder_name=data_dir,
     # transform=transforms.Compose([RandomVerticalFlip(),
@@ -100,10 +101,15 @@ def main():
     # diff_frames=2
     # )
 
-    dataloader = DataLoader(dataset, batch_size = 32, shuffle = True, num_workers = 4)
+    dataloader = DataLoader(dataset, batch_size = 64, shuffle = True, num_workers = 4)
 
     # create required directories
-    results_dir = os.path.join(os.getcwd(), "results")
+    if(res_dir):
+        results_dir = os.path.join(res_dir, "results")
+    else:
+        results_dir = os.path.join(os.getcwd(), "results")
+
+
     # models_dir = os.path.join(os.getcwd(), "saved_models")
     
     timestamp =  datetime.now().strftime("%Y-%m-%d_%I-%M-%S_%p")

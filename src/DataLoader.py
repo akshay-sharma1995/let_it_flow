@@ -61,7 +61,6 @@ class KITTIDataset(Dataset):
         # frame2 = np.array(Image.open(frame2_filename).convert('YCbCr').split()[0])
 
         sample = {'frame1':frame1, 'frame2':frame2}
-        
         # sample = np.stack((frame1, frame2), axis=0)
         # imgplot = plt.imshow(frame1)
         # plt.show()
@@ -193,7 +192,8 @@ class Normalize(object):
         # frame1 = (frame1/127.5) - 1 
         # frame2 = (frame2/127.5) - 1
         
-        sample = (sample/127.5) - 1
+        sample = sample/255.0
+        # sample = (sample/127.5) - 1
         return sample
         # return {'frame1':frame1, 'frame2':frame2}
         
@@ -213,13 +213,16 @@ class RandomCrop(object):
         frame1, frame2 = sample['frame1'], sample['frame2']
         sample = np.stack((np.array(frame1), np.array(frame2)), axis=0)
         # h, w = frame1.shape[:2]
-        
+#         print("img shape ", sample.shape)
         h,w = sample.shape[1:]
         # print("h,w ",h,w)
         # print("new_h,new_w ",self.new_h,self.new_w)
-        top = np.random.randint(0, h - self.new_h)
-        left = np.random.randint(0, w - self.new_w)
-        
+        try:
+            top = np.random.randint(0, h - self.new_h + 1)
+            left = np.random.randint(0, w - self.new_w + 1)
+        except:
+            print("err shape ", sample.shape)
+
         sample = sample[:, top: top + self.new_h,
                         left: left + self.new_w]
         

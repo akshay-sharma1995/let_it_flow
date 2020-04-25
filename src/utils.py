@@ -31,7 +31,7 @@ def parse_arguments():
     parser.add_argument('--num-epochs', dest='num_epochs', type=int, default=100, help='number of epochs')
     parser.add_argument('--checkpoint', dest='checkpoint_path', type=str, default=None, help='path of a saved_checkpoint')
     parser.add_argument('--train', dest='train', type=int, default=0, help='0 to test the model, 1 to train the model')
-    parser.add_argument('--save-interval', dest='save_interval', type=int, default=10, help='epochs after which save the model')
+    parser.add_argument('--save-interval', dest='save_interval', type=int, default=10, help='epochs after which  the model')
     parser.add_argument('--loaded-epoch', dest='loaded_epoch', type=int, default=1, help='Loading epoch of trained model')
     return parser.parse_args()
 
@@ -176,11 +176,12 @@ def warp( x, flo):
     
     return output*mask
 
-def save_samples(frames,dir_name, epoch, folder_name ):
+def save_samples(frames,dir_name, epoch, folder_name, unnormalize=True ):
     # pred_frames are numpy ndarray of size (B, 1, H, W)
     save_dir = os.path.join(dir_name, "{}_{}".format(folder_name,epoch))
     make_dirs([save_dir])
-    frames = (frames+1)*(255.0/2)
+    if(unnormalize):
+        frames = (frames+1)*(255.0)
     frames = frames.astype('uint8')
     for i in range(frames.shape[0]):
         fname = os.path.join(save_dir, "{}.png".format(i))

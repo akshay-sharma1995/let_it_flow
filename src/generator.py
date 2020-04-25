@@ -76,7 +76,14 @@ class gen(nn.Module):
                                     )
         
         self.optimizer = torch.optim.Adam(self.parameters(), lr=lr)
-
+    
+    def init_weights(self,):
+        for param in self.parameters():
+            if(len(param.shape)>1):
+                torch.nn.init.xavier_normal_(param, gain=10.0)
+            else:
+                constant_(param, 0)
+     
     def sample_noise(self, mean, logvar):
         tau = torch.randn_like(logvar).to(logvar.device)
         std = torch.exp(0.5*logvar)

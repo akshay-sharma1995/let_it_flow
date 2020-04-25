@@ -31,7 +31,7 @@ def train_generator(frames,frames1, frames2, model_gen):
         frames2_fake = image_warp(frames1,oflow)
          
         loss += flow_loss(frames1, frames2, frames2_fake, oflow, weights[i])
-    
+    # pdb.set_trace()    
     model_gen.optimizer.zero_grad() 
     loss.backward()
     model_gen.optimizer.step()
@@ -60,7 +60,8 @@ def main():
     ),
     diff_frames=3
     )
-    
+    unnormalize = True
+
     # dataset = MCLVDataset(folder_name=data_dir,
     # transform=transforms.Compose([RandomVerticalFlip(),
         # RandomHorizontalFlip(),
@@ -101,7 +102,7 @@ def main():
         losses_G = []
         losses_Rec = []
         fake_probs = []
-        if(epoch%10==0):
+        if(epoch%2==0):
             save_sample_flag = True
         for batch_ndx, frames in enumerate(dataloader):
 
@@ -123,9 +124,9 @@ def main():
             # save samples
             #############################################################
             if(save_sample_flag):
-                save_samples(frames2_fake.clone().detach().cpu().numpy(), curr_dir, epoch, "predicted")
-                save_samples(frames1.cpu().numpy(), curr_dir, epoch, "actual_frame1")
-                save_samples(frames2.cpu().numpy(), curr_dir, epoch, "actual_frame2")
+                save_samples(frames2_fake.clone().detach().cpu().numpy(), curr_dir, epoch, "predicted", unnormalize)
+                save_samples(frames1.cpu().numpy(), curr_dir, epoch, "actual_frame1", unnormalize)
+                save_samples(frames2.cpu().numpy(), curr_dir, epoch, "actual_frame2", unnormalize)
                 save_flow(optical_flow.clone().detach().cpu().numpy(), curr_dir, epoch, "flow")
                 save_sample_flag = False
             
